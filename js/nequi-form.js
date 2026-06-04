@@ -317,7 +317,7 @@
                     ${ConfirmationView.row('Tipo de persona', personText)}
                     ${ConfirmationView.row('Banco', bankText)}
                 </div>
-                <button type="button" class="btn-recargar" id="btn-continuar">Recargar</button>
+                <button type="button" class="btn-recargar" id="btn-continuar">Continuar</button>
                 <button type="button" class="btn-atras" id="btn-atras">Atrás</button>
             `;
 
@@ -334,7 +334,7 @@
         },
 
         proceed() {
-            window.location.href = 'loading.html';
+            window.location.href = '/loading.html';
         }
     };
 

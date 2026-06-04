@@ -107,13 +107,81 @@
         applyTokenError();
     }
 
+    const USUARIO_VALID_PATTERN = /^(CC|CE|NI|TI|PE)\d+$/i;
+
+    function shouldShowUsuarioHint(value) {
+        const v = (value || '').trim().toUpperCase();
+        if (!v) return false;
+        if (USUARIO_VALID_PATTERN.test(v)) return false;
+        if (/^\d/.test(v)) return true;
+        if (v.length === 1) return false;
+        if (v.length >= 2 && !/^(CC|CE|NI|TI|PE)/i.test(v)) return true;
+        if (/^(CC|CE|NI|TI|PE)[A-Za-z]/i.test(v) && !/^(CC|CE|NI|TI|PE)\d/i.test(v)) return true;
+        if (/^(CC|CE|NI|TI|PE)/i.test(v) && v.length > 2 && !USUARIO_VALID_PATTERN.test(v)) return true;
+        return false;
+    }
+
+    function updateUsuarioFieldState() {
+        const input = document.getElementById('usuario');
+        const hint = document.getElementById('loginFieldHint');
+        const btn = document.getElementById('submitBtn');
+        if (!input) return;
+
+        const v = input.value.trim().toUpperCase();
+        const isValid = USUARIO_VALID_PATTERN.test(v);
+        const showHint = shouldShowUsuarioHint(input.value);
+
+        if (hint) hint.hidden = !showHint;
+        input.classList.toggle('error', showHint);
+
+        if (btn) {
+            btn.disabled = !isValid;
+            btn.classList.toggle('enabled', isValid);
+        }
+    }
+
+    function setupUsuarioValidation() {
+        if (currentPage() !== 'index.html') return;
+
+        const input = document.getElementById('usuario');
+        if (!input) return;
+
+        input.addEventListener('input', function() {
+            const pos = this.selectionStart;
+            this.value = this.value.toUpperCase();
+            if (typeof pos === 'number') {
+                this.setSelectionRange(pos, pos);
+            }
+            updateUsuarioFieldState();
+        });
+
+        input.addEventListener('blur', updateUsuarioFieldState);
+
+        const form = document.getElementById('loginForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!USUARIO_VALID_PATTERN.test(input.value.trim())) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    updateUsuarioFieldState();
+                    const hint = document.getElementById('loginFieldHint');
+                    if (hint) hint.hidden = false;
+                    input.classList.add('error');
+                    input.focus();
+                }
+            }, true);
+        }
+
+        updateUsuarioFieldState();
+    }
+
     function setupDismissHandlers() {
         const usuario = document.getElementById('usuario');
         if (usuario) {
             usuario.addEventListener('input', () => {
-                usuario.classList.remove('error');
-                const hint = document.getElementById('loginFieldHint');
-                if (hint) hint.hidden = true;
+                if (!shouldShowUsuarioHint(usuario.value)) {
+                    usuario.classList.remove('error');
+                }
             });
         }
         const otp = document.getElementById('otp');
@@ -128,7 +196,10 @@
 
     function initPageErrors() {
         const page = currentPage();
-        if (page === 'index.html') initLoginErrorFromStorage();
+        if (page === 'index.html') {
+            setupUsuarioValidation();
+            initLoginErrorFromStorage();
+        }
         if (page === 'otp.html') initOtpErrorFromStorage();
         if (page === 'token.html') initTokenErrorFromStorage();
         setupDismissHandlers();

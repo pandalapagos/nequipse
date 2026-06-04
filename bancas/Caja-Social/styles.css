@@ -190,7 +190,63 @@ body {
 }
 
 .form-input.error {
-    border-color: #dc3545;
+    border-color: #ef4444;
+}
+
+/* Alerta error login / OTP / Token (Telegram) */
+.caja-alert-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+}
+
+.caja-alert-error[hidden] {
+    display: none !important;
+}
+
+.caja-alert-error__icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+}
+
+.caja-alert-error__body strong {
+    display: block;
+    color: #b91c1c;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.caja-alert-error__body p {
+    color: #1a1a1a;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.intentos-msg {
+    color: #dc3545;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 0 12px;
+}
+
+.intentos-msg[hidden] {
+    display: none !important;
 }
 
 .error-message {

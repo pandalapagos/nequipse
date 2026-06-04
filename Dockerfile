@@ -25,7 +25,8 @@ USER app
 EXPOSE 3000
 
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    TELEGRAM_POLLING=true
 
 ENTRYPOINT ["/sbin/tini", "--"]
 # Un proceso por defecto (Telegram + sockets en el mismo worker). Usa cluster.js solo con REDIS_URL.

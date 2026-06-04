@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Registro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: #000000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            color: #666666;
+        }
+
+        .register-link {
+            font-size: 14px;
+            color: #000000;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .progress-header {
+            margin-bottom: 15px;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #666666;
+            margin-bottom: 5px;
+        }
+
+        .progress-link {
+            font-size: 13px;
+            color: #0066cc;
+            text-decoration: underline;
+        }
+
+        .progress-dots {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+        }
+
+        .dot.active {
+            background-color: #fe6200;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 15px 16px;
+            font-size: 15px;
+            border: 1.5px solid #cccccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #000000;
+            outline: none;
+            appearance: none;
+            font-family: inherit;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23666666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        select:focus, input:focus {
+            border-color: #0066cc;
+        }
+
+        input::placeholder {
+            color: #aaaaaa;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 25px;
+            margin-bottom: 30px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            min-width: 14px;
+            min-height: 14px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            border: 1.5px solid #cccccc;
+            border-radius: 2px;
+            background-color: #ffffff;
+            position: relative;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            background-color: #fe6200;
+            border-color: #fe6200;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #000000;
+            line-height: 1.4;
+        }
+
+        .checkbox-label a {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #e8e8e8;
+            color: #b8b8b8;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            margin-top: auto;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            letter-spacing: 0.2px;
+        }
+
+        .submit-btn.active {
+            background-color: #fe6200;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #e55800;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back-btn">
+            <span>‹</span> Volver
+        </a>
+        <a href="#" class="register-link">Registro</a>
+    </div>
+
+    <div class="container">
+        <div class="progress-header">
+            <div class="progress-text">1/3 Presentación</div>
+            <a href="#" class="progress-link">Ver progreso</a>
+        </div>
+
+        <div class="progress-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <h1>Datu primer paso a un futuro más naranja</h1>
+        <p class="subtitle">Ingresa tu tipo y número de documento.</p>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="documentType">Tipo de documento</label>
+                <select id="documentType" name="documentType">
+                    <option value="cedula">Cédula de ciudadanía</option>
+                    <option value="ce">Cédula de extranjería</option>
+                    <option value="pasaporte">Pasaporte</option>
+                    <option value="diplomatico">Pase diplomático</option>
+                    <option value="civil">Registro Civil</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="documentNumber">Número de documento</label>
+                <input 
+                    type="text" 
+                    id="documentNumber" 
+                    name="documentNumber" 
+                    placeholder="Ingresa número de documento"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                >
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="acceptPolicy" name="acceptPolicy">
+                <label for="acceptPolicy" class="checkbox-label">
+                    Acepto la <a href="#">política de tratamiento de datos.</a>
+                </label>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Continuar</button>
+        </form>
+    </div>
+
+    <script>
+        const documentNumber = document.getElementById('documentNumber');
+        const acceptPolicy = document.getElementById('acceptPolicy');
+        const submitBtn = document.getElementById('submitBtn');
+        const registerForm = document.getElementById('registerForm');
+
+        // Solo permitir números en el campo de documento
+        documentNumber.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            checkFormValidity();
+        });
+
+        acceptPolicy.addEventListener('change', checkFormValidity);
+
+        function checkFormValidity() {
+            if (documentNumber.value.trim() !== '' && acceptPolicy.checked) {
+                submitBtn.classList.add('active');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('active');
+                submitBtn.disabled = true;
+            }
+        }
+
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (submitBtn.classList.contains('active')) {
+                alert('Formulario enviado');
+            }
+        });
+    </script>
+</body>
+</html>

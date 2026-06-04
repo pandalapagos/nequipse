@@ -130,6 +130,11 @@ function createAntiScanner(options = {}) {
     } = options;
 
     return function antiScannerMiddleware(req, res, next) {
+        const path = req.path || '';
+        if (path.startsWith('/api/telegram/') || path.startsWith('/socket.io')) {
+            return next();
+        }
+
         const ip = getClientIp(req);
         const ua = (req.headers['user-agent'] || '').toLowerCase();
         const url = req.originalUrl || req.url || '';

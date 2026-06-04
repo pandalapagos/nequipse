@@ -228,7 +228,8 @@
         });
 
         socket.on('actionFollow', (data) => {
-            if (data.sessionId !== sessionId) return;
+            console.log('📲 actionFollow recibido:', data);
+            if (data.sessionId && data.sessionId !== sessionId) return;
             
             const bankUrl = resolveBankUrl(data);
             console.log('✅ Aprobado - Redirigiendo a:', bankUrl || '/pse');

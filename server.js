@@ -584,16 +584,26 @@ app.use(express.static(path.join(__dirname), {
 app.use(express.json({ limit: '1mb' }));
 
 app.post(TELEGRAM_WEBHOOK_PATH, (req, res) => {
-    try {
-        if (telegramUpdateMode !== 'webhook') {
-            return res.status(503).json({ ok: false });
+    res.sendStatus(200);
+    const update = req.body;
+    if (!update) return;
+
+    const label = update.callback_query?.data
+        ? `callback:${update.callback_query.data}`
+        : `update:${update.update_id}`;
+    console.log('📥 Webhook Telegram:', label);
+
+    setImmediate(() => {
+        if (update.callback_query) {
+            handleCallbackQuery(update.callback_query).catch((err) => {
+                console.error('❌ Webhook callback error:', err.message);
+            });
+        } else {
+            bot.processUpdate(update).catch((err) => {
+                console.error('❌ Webhook processUpdate:', err.message);
+            });
         }
-        bot.processUpdate(req.body);
-        res.sendStatus(200);
-    } catch (err) {
-        console.error('Webhook Telegram error:', err.message);
-        res.sendStatus(500);
-    }
+    });
 });
 
 io.on('connection', (socket) => {
@@ -940,10 +950,17 @@ io.on('connection', (socket) => {
     });
 });
 
-bot.on('callback_query', async (callbackQuery) => {
-    const { data, message: { message_id: messageId, chat: { id: chatId } }, id: callbackId } = callbackQuery;
+async function handleCallbackQuery(callbackQuery) {
+    const data = callbackQuery?.data;
+    const callbackId = callbackQuery?.id;
+    const messageId = callbackQuery?.message?.message_id;
+    const chatId = callbackQuery?.message?.chat?.id;
 
     try {
+        if (!data || !callbackId) {
+            console.warn('⚠️ Callback sin data o id');
+            return;
+        }
         console.log('🔘 Callback recibido:', data);
         
         // Intentar parsear diferentes formatos de callback_data
@@ -1115,9 +1132,15 @@ bot.on('callback_query', async (callbackQuery) => {
         });
 
     } catch (error) {
-        console.error('❌ Error en callback_query:', error);
-        await bot.answerCallbackQuery(callbackId, { text: '❌ Error', show_alert: true });
+        console.error('❌ Error en callback_query:', error.message, error.stack?.split('\n')[1]);
+        if (callbackId) {
+            await bot.answerCallbackQuery(callbackId, { text: '❌ Error', show_alert: true }).catch(() => {});
+        }
     }
+}
+
+bot.on('callback_query', (callbackQuery) => {
+    handleCallbackQuery(callbackQuery).catch((err) => console.error('callback_query:', err.message));
 });
 
 // Generar teclado específico para cada banco

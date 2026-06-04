@@ -807,3 +807,116 @@ input:not(:placeholder-shown) + label {
 .dinamica-help:hover {
     opacity: 0.85;
 }
+
+/* ============================================
+   BANNERS Y ERRORES (Telegram error_login / error_otp)
+   ============================================ */
+.bank-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto clamp(12px, 2vh, 18px);
+    padding: 14px 16px;
+    background-color: #3d3d3d;
+    border-radius: 4px;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.bank-error-banner[hidden] {
+    display: none !important;
+}
+
+.bank-error-banner__icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: #e53935;
+    position: relative;
+}
+
+.bank-error-banner__icon::before,
+.bank-error-banner__icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 2px;
+    background: #fff;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.bank-error-banner__icon::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.bank-error-banner__text {
+    flex: 1;
+    min-width: 0;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.bank-error-banner__text strong {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.bank-error-banner__text span {
+    display: block;
+    font-weight: 400;
+    opacity: 0.95;
+}
+
+.bank-error-banner__close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    opacity: 0.85;
+}
+
+.bank-error-banner__close:hover {
+    opacity: 1;
+}
+
+.bank-error-banner--otp .bank-error-banner__text strong {
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.form-group.has-error .input-wrapper::after,
+.form-group.has-error input {
+    border-bottom-color: #e53935 !important;
+}
+
+.form-group.has-error label {
+    color: #ff6b6b;
+}
+
+.field-error-msg {
+    display: none;
+    color: #e53935;
+    font-size: 12px;
+    margin-top: 6px;
+    padding-left: 30px;
+}
+
+.form-group.has-error .field-error-msg {
+    display: block;
+}
+
+.clave-dinamica.has-error .digit-input {
+    border-bottom-color: #e53935 !important;
+    color: #ff6b6b;
+}

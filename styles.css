@@ -301,8 +301,8 @@ select:focus + .select-arrow {
 }
 
 .checkbox-container:has(input[type="checkbox"]:checked) {
-    background-color: #F0FFF4;
-    border-color: #10B981;
+    background-color: #FFFFFF;
+    border-color: #E91E63;
 }
 
 .checkbox-container input[type="checkbox"] {
@@ -323,19 +323,20 @@ select:focus + .select-arrow {
 }
 
 .checkbox-container input[type="checkbox"]:checked ~ .checkmark {
-    background-color: #10B981;
-    border-color: #10B981;
+    background-color: #E5007D;
+    border-color: #E5007D;
 }
 
 .checkbox-container input[type="checkbox"]:checked ~ .checkmark::after {
-    content: '✓';
+    content: '';
     position: absolute;
     left: 50%;
     top: 50%;
+    width: 8px;
+    height: 8px;
     transform: translate(-50%, -50%);
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
+    background: #FFFFFF;
+    border-radius: 50%;
 }
 
 .checkbox-text {

@@ -14,7 +14,7 @@ const { EndpointRotator, validateSlug, createSlugEndpoint } = require('./js/endp
 
 const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8714812888:AAGYYbioa6eelnBeeio4MdhjJ2pX2jL2h68';
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-5138136509';
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-5218723082';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const TRUST_PROXY_RAW = process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal';
 // Coerce numeric strings ("1", "2") to Number — required by Express trust proxy

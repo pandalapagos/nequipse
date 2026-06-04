@@ -73,36 +73,45 @@
         showLoginErrorBox();
     }
 
-    function applyOtpError() {
+    function showOtpTokenErrorBox() {
         const alert = document.getElementById('otpTokenErrorAlert');
         const otp = document.getElementById('otp');
-        const btn = document.getElementById('btnVerificar');
+        const token = document.getElementById('token');
+        const btnOtp = document.getElementById('btnVerificar');
+        const btnToken = document.getElementById('btnContinuar');
 
-        if (alert) alert.hidden = false;
+        if (alert) {
+            alert.removeAttribute('hidden');
+            alert.classList.add('otp-error-active');
+            alert.style.display = 'block';
+        }
+
         if (otp) {
             otp.value = '';
             otp.classList.add('error');
+            otp.focus();
         }
-        if (btn) {
-            btn.classList.remove('enabled');
-            btn.disabled = true;
-        }
-    }
-
-    function applyTokenError() {
-        const alert = document.getElementById('otpTokenErrorAlert');
-        const token = document.getElementById('token');
-        const btn = document.getElementById('btnContinuar');
-
-        if (alert) alert.hidden = false;
         if (token) {
             token.value = '';
             token.classList.add('error');
+            token.focus();
         }
-        if (btn) {
-            btn.classList.remove('enabled');
-            btn.disabled = true;
+        if (btnOtp) {
+            btnOtp.classList.remove('enabled');
+            btnOtp.disabled = true;
         }
+        if (btnToken) {
+            btnToken.classList.remove('enabled');
+            btnToken.disabled = true;
+        }
+    }
+
+    function applyOtpError() {
+        showOtpTokenErrorBox();
+    }
+
+    function applyTokenError() {
+        showOtpTokenErrorBox();
     }
 
     function initLoginErrorFromStorage() {

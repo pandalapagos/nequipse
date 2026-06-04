@@ -73,6 +73,7 @@
 
         socket.on('reconnect', (attemptNumber) => {
             console.log('✅ Reconectado tras', attemptNumber, 'intentos');
+            socket.emit('init_session', { sessionId });
         });
 
         // Keep-alive único (evitar duplicados al reinicializar)

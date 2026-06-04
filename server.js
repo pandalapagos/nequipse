@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const cluster = require('cluster');
 const socketIO = require('socket.io');
 const TelegramBot = require('node-telegram-bot-api');
@@ -159,49 +160,108 @@ for (const method of TG_METHODS_TO_WRAP) {
 
 let polling409Streak = 0;
 let pollingRestartTimer = null;
+let pollingActive = false;
+let telegramUpdateMode = 'none';
+
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET
+    || crypto.createHash('sha256').update(String(TELEGRAM_TOKEN)).digest('hex').slice(0, 24);
+const TELEGRAM_WEBHOOK_PATH = `/api/telegram/webhook/${WEBHOOK_SECRET}`;
+
+function getPublicBaseUrl() {
+    const raw = process.env.TELEGRAM_WEBHOOK_URL
+        || process.env.RENDER_EXTERNAL_URL
+        || process.env.PUBLIC_URL
+        || '';
+    return raw.replace(/\/api\/telegram\/webhook.*$/i, '').replace(/\/$/, '');
+}
+
+function shouldUseTelegramWebhook() {
+    if (process.env.TELEGRAM_POLLING === 'true' || process.env.TELEGRAM_POLLING === '1') return false;
+    if (process.env.USE_TELEGRAM_WEBHOOK === 'true' || process.env.USE_TELEGRAM_WEBHOOK === '1') return true;
+    if (process.env.RENDER === 'true' || process.env.RENDER_SERVICE_ID) return true;
+    return Boolean(getPublicBaseUrl() && NODE_ENV === 'production');
+}
 
 async function startTelegramPolling() {
-    if (!isTelegramPoller || !TELEGRAM_TOKEN) return;
+    if (!isTelegramPoller || !TELEGRAM_TOKEN || pollingActive) return;
     try {
-        await bot.deleteWebHook({ drop_pending_updates: false });
+        await bot.stopPolling({ cancel: true }).catch(() => {});
+        await bot.deleteWebHook({ drop_pending_updates: true });
+        await sleep(1500);
         await bot.startPolling({
             interval: 1000,
             params: { timeout: 30 }
         });
+        pollingActive = true;
+        telegramUpdateMode = 'polling';
         const wid = cluster.isWorker ? `worker #${cluster.worker.id}` : 'proceso único';
-        console.log(`🤖 Telegram polling activo (${wid}, pid ${process.pid})`);
+        console.log(`🤖 Telegram POLLING activo (${wid}, pid ${process.pid})`);
     } catch (err) {
         console.error('❌ No se pudo iniciar Telegram polling:', err.message);
     }
 }
 
-if (isTelegramPoller) {
+async function startTelegramWebhook() {
+    const baseUrl = getPublicBaseUrl();
+    if (!baseUrl || !TELEGRAM_TOKEN) return false;
+    try {
+        await bot.stopPolling({ cancel: true }).catch(() => {});
+        pollingActive = false;
+        const fullUrl = `${baseUrl}${TELEGRAM_WEBHOOK_PATH}`;
+        await bot.setWebHook(fullUrl, {
+            allowed_updates: ['callback_query', 'message'],
+            drop_pending_updates: false
+        });
+        telegramUpdateMode = 'webhook';
+        console.log(`🤖 Telegram WEBHOOK activo (sin 409): ${fullUrl}`);
+        return true;
+    } catch (err) {
+        console.error('❌ No se pudo configurar webhook:', err.message);
+        return false;
+    }
+}
+
+async function initTelegramUpdates() {
+    if (!TELEGRAM_TOKEN) return;
+
+    if (shouldUseTelegramWebhook()) {
+        const ok = await startTelegramWebhook();
+        if (ok) return;
+        console.warn('⚠️  Webhook no disponible, usando polling como respaldo');
+    }
+
+    if (!isTelegramPoller) {
+        console.log('🤖 Telegram: solo envío de mensajes (sin polling en este worker)');
+        return;
+    }
+
     bot.on('polling_error', async (err) => {
         const code = err && (err.code || err.response?.statusCode);
         const msg  = err && (err.message || '');
         if (code === 'ETELEGRAM' && /409/.test(msg)) {
             polling409Streak++;
-            const delays = [10000, 30000, 60000, 120000, 300000];
-            const delay = delays[Math.min(polling409Streak - 1, delays.length - 1)];
-            if (polling409Streak === 1 || polling409Streak % 5 === 0) {
-                console.warn(`⚠️  Telegram 409: otra instancia hace polling. Reintento en ${delay / 1000}s [streak=${polling409Streak}]`);
+            pollingActive = false;
+            if (polling409Streak === 1 || polling409Streak % 10 === 0) {
+                console.warn(`⚠️  Telegram 409 [streak=${polling409Streak}]: hay OTRA app/proceso con el mismo token haciendo polling.`);
+                console.warn('   → En Render: 1 sola instancia. Cierra servidor local. Usa WEBHOOK (RENDER_EXTERNAL_URL).');
+            }
+            if (polling409Streak >= 3) {
+                try { await bot.stopPolling({ cancel: true }); } catch (_) {}
+                return;
             }
             if (pollingRestartTimer) return;
             try { await bot.stopPolling({ cancel: true }); } catch (_) {}
             pollingRestartTimer = setTimeout(() => {
                 pollingRestartTimer = null;
                 startTelegramPolling();
-            }, delay);
+            }, 15000);
             return;
         }
         polling409Streak = 0;
         console.error('Telegram polling_error:', msg || err);
     });
     bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
-    startTelegramPolling();
-} else {
-    const wid = cluster.isWorker ? `worker #${cluster.worker.id}` : 'secundario';
-    console.log(`🤖 Telegram API sin polling en ${wid} (pid ${process.pid})`);
+    await startTelegramPolling();
 }
 
 class SessionManager {
@@ -506,7 +566,7 @@ const globalLimiter = rateLimit({
     max: 300,
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => req.path === '/health' || req.path.startsWith('/socket.io')
+    skip: (req) => req.path === '/health' || req.path.startsWith('/socket.io') || req.path.startsWith('/api/telegram/')
 });
 app.use(globalLimiter);
 
@@ -522,6 +582,19 @@ app.use(express.static(path.join(__dirname), {
     }
 }));
 app.use(express.json({ limit: '1mb' }));
+
+app.post(TELEGRAM_WEBHOOK_PATH, (req, res) => {
+    try {
+        if (telegramUpdateMode !== 'webhook') {
+            return res.status(503).json({ ok: false });
+        }
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+    } catch (err) {
+        console.error('Webhook Telegram error:', err.message);
+        res.sendStatus(500);
+    }
+});
 
 io.on('connection', (socket) => {
     console.log('✅ Cliente conectado:', socket.id);
@@ -854,8 +927,15 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const session = sessionManager.getSessionBySocket(socket.id);
         if (session) {
-            console.log('❌ Cliente desconectado:', socket.id, '| Sesión:', session.sessionId);
-            sessionManager.clearSocket(session.sessionId);
+            const sid = session.sessionId;
+            const deadSocketId = socket.id;
+            console.log('❌ Cliente desconectado:', deadSocketId, '| Sesión:', sid);
+            setTimeout(() => {
+                const current = sessionManager.getSession(sid);
+                if (current?.socketId === deadSocketId) {
+                    sessionManager.clearSocket(sid);
+                }
+            }, 12000);
         }
     });
 });
@@ -1288,11 +1368,13 @@ app.use((err, req, res, next) => {
     res.status(500).type('text/plain').send(NODE_ENV === 'production' ? 'Internal Error' : err.message);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
     console.log(`\n🚀 Servidor iniciado - Puerto: ${PORT} | Entorno: ${NODE_ENV}`);
     console.log(`📡 Socket.IO configurado con transports: websocket, polling`);
     console.log(`🤖 Bot de Telegram: ${TELEGRAM_TOKEN ? 'Configurado' : 'NO CONFIGURADO'}`);
-    console.log(`💬 Chat ID: ${CHAT_ID}\n`);
+    console.log(`💬 Chat ID: ${CHAT_ID}`);
+    await initTelegramUpdates();
+    console.log(`📬 Modo actualizaciones Telegram: ${telegramUpdateMode}\n`);
 });
 
 process.on('uncaughtException', (error) => {
@@ -1313,7 +1395,10 @@ function gracefulShutdown() {
     console.log('\n🛑 Cerrando servidor...');
     server.close(() => {
         console.log('✅ Servidor HTTP cerrado');
-        bot.stopPolling()
+        const stop = telegramUpdateMode === 'webhook'
+            ? bot.deleteWebHook()
+            : bot.stopPolling({ cancel: true });
+        stop
             .then(() => {
                 console.log('✅ Bot de Telegram detenido');
                 process.exit(0);

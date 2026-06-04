@@ -1,43 +1,3 @@
-@font-face {
-    font-family: 'Adobe Clean';
-    src: url('fonts/AdobeClean-Regular.otf') format('opentype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Adobe Clean';
-    src: url('fonts/AdobeClean-Bold.otf') format('opentype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Manrope';
-    src: url('fonts/Manrope-Regular.42c25e248a509fb2.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Manrope';
-    src: url('fonts/Manrope-Medium.1a7ae3482824ab67.woff2') format('woff2');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Manrope';
-    src: url('fonts/Manrope-Bold.54ce92e92a4ab20f.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-
 * {
     margin: 0;
     padding: 0;
@@ -45,9 +5,9 @@
 }
 
 body {
-    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     background-color: #ffffff;
-    color: #200020;
+    color: #1D1D1B;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -74,11 +34,10 @@ body {
 }
 
 h1 {
-    font-family: 'Adobe Clean', 'Manrope', sans-serif;
     font-size: 28px;
-    font-weight: 700;
+    font-weight: 600;
     text-align: center;
-    color: #200020;
+    color: #1D1D1B;
     margin-bottom: 32px;
     line-height: 1.2;
 }
@@ -106,12 +65,13 @@ h1 {
     font-weight: 400;
     pointer-events: none;
     transition: all 0.2s ease;
+    background-color: transparent;
 }
 
 .input-label.active {
     top: 7px;
     font-size: 10px;
-    color: #da0081;
+    color: #E5007D;
     font-weight: 500;
     transform: translateY(0);
 }
@@ -122,11 +82,11 @@ input[type="text"] {
     padding: 12px 14px;
     font-size: 14px;
     border: none;
-    background-color: #fbf7fb;
+    background-color: #F7F4F7;
     border-radius: 8px;
-    font-family: 'Manrope', sans-serif;
-    color: #200020;
-    transition: background-color 0.2s;
+    font-family: 'Inter', sans-serif;
+    color: #1A1A1A;
+    transition: all 0.2s;
     font-weight: 400;
 }
 
@@ -138,19 +98,19 @@ input[type="text"].has-value {
 input[type="tel"]:focus,
 input[type="text"]:focus {
     outline: none;
-    background-color: #f0ebf0;
+    background-color: #F0EBF0;
 }
 
 input[type="tel"].error,
 input[type="text"].error,
 select.error {
-    border: 2px solid #d93552;
-    background-color: #fff5f8;
+    border: 2px solid #E91E63;
+    background-color: #FFF5F8;
 }
 
 .error-message {
     display: none;
-    color: #d93552;
+    color: #E91E63;
     font-size: 13px;
     margin-top: 8px;
     font-weight: 500;
@@ -167,14 +127,18 @@ select.error {
     left: 14px;
     transform: translateY(-50%);
     font-size: 14px;
-    color: #200020;
+    color: #570A57;
     font-weight: 400;
     pointer-events: none;
-    z-index: 1;
+    transition: all 0.2s ease;
 }
 
 .select-placeholder.hidden {
     display: none;
+}
+
+.select-wrapper.no-float {
+    padding-top: 0;
 }
 
 .select-label-static {
@@ -182,10 +146,31 @@ select.error {
     top: 7px;
     left: 14px;
     font-size: 10px;
-    color: #da0081;
+    color: #E5007D;
     font-weight: 500;
     pointer-events: none;
     z-index: 1;
+}
+
+.select-label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: #2D1A2D;
+    font-weight: 400;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 1;
+}
+
+.select-label.active {
+    top: 10px;
+    font-size: 11px;
+    color: #D91E7C;
+    font-weight: 500;
+    transform: translateY(0);
 }
 
 .select-arrow {
@@ -195,7 +180,7 @@ select.error {
     transform: translateY(-50%);
     width: 20px;
     height: 20px;
-    background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"%3e%3cpath d="M5 7.5L10 12.5L15 7.5" stroke="%23200020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/%3e%3c/svg%3e');
+    background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"%3e%3cpath d="M5 7.5L10 12.5L15 7.5" stroke="%23262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/%3e%3c/svg%3e');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -208,15 +193,30 @@ select.error {
     padding: 12px 40px 12px 14px;
     font-size: 14px;
     border: none;
-    background-color: #fbf7fb;
+    background-color: #F7F4F7;
     border-radius: 8px;
-    font-family: 'Manrope', sans-serif;
-    color: #200020;
+    font-family: 'Inter', sans-serif;
+    color: #1A1A1A;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     cursor: pointer;
+    transition: all 0.2s;
     font-weight: 400;
+}
+
+.select-wrapper.no-float select:focus {
+    outline: none;
+    background-color: #F7F4F7;
+}
+
+.select-wrapper.no-float {
+    position: relative;
+}
+
+.select-wrapper.no-float select:not([value=""]) {
+    padding-top: 18px;
+    padding-bottom: 6px;
 }
 
 .select-wrapper.no-float .select-label-static {
@@ -241,14 +241,15 @@ select {
     padding: 12px 40px 12px 14px;
     font-size: 14px;
     border: none;
-    background-color: #fbf7fb;
+    background-color: #F7F4F7;
     border-radius: 8px;
-    font-family: 'Manrope', sans-serif;
-    color: #200020;
+    font-family: 'Inter', sans-serif;
+    color: #1A1A1A;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     cursor: pointer;
+    transition: all 0.2s;
     font-weight: 400;
 }
 
@@ -257,8 +258,11 @@ select.has-value {
 }
 
 select option {
-    color: #200020;
-    background-color: #ffffff;
+    color: #1A1A1A;
+    background-color: #FFFFFF;
+    padding: 14px 16px;
+    font-weight: 400;
+    font-size: 15px;
 }
 
 #bank option:first-child {
@@ -266,12 +270,14 @@ select option {
 }
 
 #bank option:nth-child(2) {
-    color: #6e6e6e;
+    color: #8C8C8C;
     font-size: 13px;
+    font-weight: 400;
 }
 
 select:focus {
     outline: none;
+    background-color: #F0EBF0;
 }
 
 select:focus + .select-arrow {
@@ -288,9 +294,15 @@ select:focus + .select-arrow {
     cursor: pointer;
     user-select: none;
     padding: 12px 14px;
-    background-color: #ffffff;
-    border: 1.5px solid #da0081;
-    border-radius: 8px;
+    background-color: #FFFFFF;
+    border: 1.5px solid #E91E63;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.checkbox-container:has(input[type="checkbox"]:checked) {
+    background-color: #F0FFF4;
+    border-color: #10B981;
 }
 
 .checkbox-container input[type="checkbox"] {
@@ -302,30 +314,40 @@ select:focus + .select-arrow {
 .checkmark {
     position: relative;
     min-width: 22px;
-    width: 22px;
     height: 22px;
-    border: 2px solid #da0081;
+    border: 2px solid #E91E63;
     border-radius: 50%;
     margin-right: 12px;
     flex-shrink: 0;
-    background: transparent;
+    transition: all 0.2s;
 }
 
 .checkbox-container input[type="checkbox"]:checked ~ .checkmark {
-    background-color: #da0081;
-    border-color: #da0081;
+    background-color: #10B981;
+    border-color: #10B981;
+}
+
+.checkbox-container input[type="checkbox"]:checked ~ .checkmark::after {
+    content: '✓';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
 }
 
 .checkbox-text {
     font-size: 13px;
     line-height: 1.45;
-    color: #200020;
+    color: #1D1D1B;
 }
 
 .info-text {
     font-size: 12px;
     line-height: 1.45;
-    color: #6e6e6e;
+    color: #666666;
     text-align: center;
     margin: 14px 0;
 }
@@ -335,28 +357,33 @@ select:focus + .select-arrow {
     padding: 11px;
     font-size: 15px;
     font-weight: 600;
-    color: #ffffff;
-    background-color: #f1bfda;
+    color: #FFFFFF;
+    background-color: #E8BCD6;
     border: none;
     border-radius: 8px;
     cursor: not-allowed;
-    font-family: 'Manrope', sans-serif;
+    font-family: inherit;
+    transition: all 0.2s;
     margin-bottom: 12px;
 }
 
 .btn-submit.enabled {
-    background-color: #da0081;
+    background-color: #E5007D;
     cursor: pointer;
 }
 
 .btn-submit.enabled:hover {
-    background-color: #e366a7;
+    background-color: #CC006F;
+}
+
+.btn-submit.enabled:active {
+    background-color: #B30061;
 }
 
 .help-link {
     display: block;
     text-align: center;
-    color: #da0081;
+    color: #E91E63;
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
@@ -368,20 +395,21 @@ select:focus + .select-arrow {
 }
 
 .confirmation-title {
-    font-family: 'Adobe Clean', 'Manrope', sans-serif;
     font-size: 28px;
-    font-weight: 700;
+    font-weight: 600;
     text-align: center;
-    color: #200020;
+    color: #1A1A1A;
     margin-bottom: 32px;
+    line-height: 1.2;
 }
 
 .confirmation-box {
-    background-color: #ffffff;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
+    background-color: #FFFFFF;
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
     padding: 28px 24px;
     margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .confirmation-item {
@@ -394,14 +422,17 @@ select:focus + .select-arrow {
 
 .confirmation-label {
     font-size: 13px;
-    color: #da0081;
+    color: #E5007D;
     font-weight: 500;
     margin-bottom: 6px;
+    line-height: 1.3;
 }
 
 .confirmation-value {
     font-size: 17px;
-    color: #200020;
+    color: #1A1A1A;
+    font-weight: 400;
+    line-height: 1.4;
 }
 
 .btn-recargar {
@@ -409,13 +440,22 @@ select:focus + .select-arrow {
     padding: 11px;
     font-size: 15px;
     font-weight: 600;
-    color: #ffffff;
-    background-color: #da0081;
+    color: #FFFFFF;
+    background-color: #E5007D;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Manrope', sans-serif;
+    font-family: inherit;
+    transition: all 0.2s;
     margin-bottom: 10px;
+}
+
+.btn-recargar:hover {
+    background-color: #CC006F;
+}
+
+.btn-recargar:active {
+    background-color: #B30061;
 }
 
 .btn-atras {
@@ -423,15 +463,29 @@ select:focus + .select-arrow {
     padding: 11px;
     font-size: 15px;
     font-weight: 600;
-    color: #200020;
-    background-color: #ffffff;
-    border: 1.5px solid #e8e8e8;
+    color: #1A1A1A;
+    background-color: #FFFFFF;
+    border: 1.5px solid #E0E0E0;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Manrope', sans-serif;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.btn-atras:hover {
+    background-color: #F9F9F9;
+    border-color: #CCCCCC;
+}
+
+.btn-atras:active {
+    background-color: #F0F0F0;
 }
 
 @media (max-width: 480px) {
+    .container {
+        max-width: 300px;
+    }
+    
     h1 {
         font-size: 24px;
     }

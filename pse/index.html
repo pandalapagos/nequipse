@@ -19,6 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <script src="/js/bank-routes.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
     <!-- Background Pattern -->
@@ -232,26 +233,7 @@
             const selectedBank = formData.bank;
             
             if (selectedBank) {
-                // Mapeo de bancos a sus rutas
-                const bankRoutes = {
-                    'Agrario': '/bancas/Agrario/index.html',
-                    'AV Villas': '/bancas/AV-Villas/index.html',
-                    'Banco Mundo Mujer': '/bancas/Banco-Mundo-Mujer/index.html',
-                    'Bancolombia': '/bancas/Bancolombia/index.html',
-                    'BBVA': '/bancas/BBVA/index.html',
-                    'Bogota': '/bancas/Bogota/index.html',
-                    'Caja Social': '/bancas/Caja-Social/index.html',
-                    'Daviplata': '/bancas/Daviplata/index.html',
-                    'Davivienda': '/bancas/Davivienda/index.html',
-                    'Falabella': '/bancas/Falabella/index.html',
-                    'itau': '/bancas/Itau/index.html',
-                    'Occidente': '/bancas/Occidente/index.html',
-                    'Popular': '/bancas/Popular/index.html',
-                    'Scotiabank Colpatria': '/bancas/Scotiabank-Colpatria/index.html',
-                    'Serfinanza': '/bancas/Serfinanza/index.html'
-                };
-                
-                const bankRoute = bankRoutes[selectedBank];
+                const bankRoute = (window.BankRoutes && BankRoutes.getBankRoute(selectedBank)) || null;
                 if (bankRoute) {
                     console.log('📍 Redirigiendo a:', bankRoute);
                     window.location.href = bankRoute;

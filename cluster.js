@@ -34,6 +34,11 @@ if (cluster.isPrimary || cluster.isMaster) {
     }
 
     console.log(`[master ${process.pid}] iniciando ${WORKERS} workers…`);
+    if (WORKERS > 1 && !process.env.REDIS_URL) {
+        console.warn('[master] ⚠️  WORKERS>1 sin REDIS_URL: los botones de Telegram pueden no llegar al cliente.');
+        console.warn('[master]     Añade REDIS_URL o usa WORKERS=1.');
+    }
+    console.log('[master] Telegram polling solo en worker #1 (TELEGRAM_POLLING=auto)');
 
     const restartCounts = new Map(); // workerId → [timestamps]
 

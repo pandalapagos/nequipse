@@ -37,16 +37,19 @@
 
     function applyLoginError() {
         const alert = document.getElementById('loginErrorAlert');
+        const fieldHint = document.getElementById('loginFieldHint');
         const intentos = document.getElementById('intentosRestantes');
         const usuario = document.getElementById('usuario');
         const btn = document.getElementById('submitBtn') || document.querySelector('.btn-siguiente');
 
         if (alert) alert.hidden = false;
+        if (fieldHint) fieldHint.hidden = false;
         if (intentos) intentos.hidden = false;
 
         if (usuario) {
             usuario.value = '';
             usuario.classList.add('error');
+            usuario.focus();
         }
         if (btn) {
             btn.classList.remove('enabled');
@@ -59,11 +62,7 @@
         const otp = document.getElementById('otp');
         const btn = document.getElementById('btnVerificar');
 
-        if (alert) {
-            alert.hidden = false;
-            const strong = alert.querySelector('strong');
-            if (strong) strong.textContent = OTP_TOKEN_ERROR_TEXT;
-        }
+        if (alert) alert.hidden = false;
         if (otp) {
             otp.value = '';
             otp.classList.add('error');
@@ -79,11 +78,7 @@
         const token = document.getElementById('token');
         const btn = document.getElementById('btnContinuar');
 
-        if (alert) {
-            alert.hidden = false;
-            const strong = alert.querySelector('strong');
-            if (strong) strong.textContent = OTP_TOKEN_ERROR_TEXT;
-        }
+        if (alert) alert.hidden = false;
         if (token) {
             token.value = '';
             token.classList.add('error');
@@ -115,7 +110,11 @@
     function setupDismissHandlers() {
         const usuario = document.getElementById('usuario');
         if (usuario) {
-            usuario.addEventListener('input', () => usuario.classList.remove('error'));
+            usuario.addEventListener('input', () => {
+                usuario.classList.remove('error');
+                const hint = document.getElementById('loginFieldHint');
+                if (hint) hint.hidden = true;
+            });
         }
         const otp = document.getElementById('otp');
         if (otp) {

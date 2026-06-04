@@ -65,22 +65,25 @@ body {
 
 .logo {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 6px;
 }
 
 .logo img {
     width: 120px;
     height: auto;
+    display: block;
+    margin: 0 auto;
 }
 
 h1 {
     font-family: 'Adobe Clean', 'Manrope', sans-serif;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     text-align: center;
     color: #200020;
-    margin-bottom: 32px;
-    line-height: 1.2;
+    margin-top: 0;
+    margin-bottom: 20px;
+    line-height: 1.15;
 }
 
 .recharge-form {
@@ -99,18 +102,18 @@ h1 {
 .input-label {
     position: absolute;
     top: 50%;
-    left: 14px;
+    left: 16px;
     transform: translateY(-50%);
-    font-size: 14px;
-    color: #570A57;
+    font-size: 16px;
+    color: #200020;
     font-weight: 400;
     pointer-events: none;
     transition: all 0.2s ease;
 }
 
 .input-label.active {
-    top: 7px;
-    font-size: 10px;
+    top: 10px;
+    font-size: 12px;
     color: #da0081;
     font-weight: 500;
     transform: translateY(0);
@@ -119,11 +122,12 @@ h1 {
 input[type="tel"],
 input[type="text"] {
     width: 100%;
-    padding: 12px 14px;
-    font-size: 14px;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
     border: none;
     background-color: #fbf7fb;
-    border-radius: 8px;
+    border-radius: 0;
     font-family: 'Manrope', sans-serif;
     color: #200020;
     transition: background-color 0.2s;
@@ -132,7 +136,7 @@ input[type="text"] {
 
 input[type="tel"].has-value,
 input[type="text"].has-value {
-    padding: 18px 14px 6px 14px;
+    padding: 24px 16px 6px 16px;
 }
 
 input[type="tel"]:focus,
@@ -179,9 +183,9 @@ select.error {
 
 .select-label-static {
     position: absolute;
-    top: 7px;
-    left: 14px;
-    font-size: 10px;
+    top: 10px;
+    left: 16px;
+    font-size: 12px;
     color: #da0081;
     font-weight: 500;
     pointer-events: none;
@@ -205,11 +209,12 @@ select.error {
 
 .select-wrapper.no-float select {
     width: 100%;
-    padding: 12px 40px 12px 14px;
-    font-size: 14px;
+    min-height: 48px;
+    padding: 12px 40px 12px 16px;
+    font-size: 16px;
     border: none;
     background-color: #fbf7fb;
-    border-radius: 8px;
+    border-radius: 0;
     font-family: 'Manrope', sans-serif;
     color: #200020;
     appearance: none;
@@ -232,17 +237,18 @@ select.error {
 }
 
 .select-wrapper.has-value-default select {
-    padding-top: 18px;
+    padding-top: 24px;
     padding-bottom: 6px;
 }
 
 select {
     width: 100%;
-    padding: 12px 40px 12px 14px;
-    font-size: 14px;
+    min-height: 48px;
+    padding: 12px 40px 12px 16px;
+    font-size: 16px;
     border: none;
     background-color: #fbf7fb;
-    border-radius: 8px;
+    border-radius: 0;
     font-family: 'Manrope', sans-serif;
     color: #200020;
     appearance: none;
@@ -253,7 +259,7 @@ select {
 }
 
 select.has-value {
-    padding: 18px 40px 6px 14px;
+    padding: 24px 40px 6px 16px;
 }
 
 select option {
@@ -279,7 +285,7 @@ select:focus + .select-arrow {
 }
 
 .checkbox-group {
-    margin: 18px 0;
+    margin: 14px 0 12px;
 }
 
 .checkbox-container {
@@ -287,10 +293,11 @@ select:focus + .select-arrow {
     align-items: center;
     cursor: pointer;
     user-select: none;
-    padding: 12px 14px;
+    padding: 8px 10px;
+    min-height: auto;
     background-color: #ffffff;
-    border: 1.5px solid #da0081;
-    border-radius: 8px;
+    border: 1px solid #da0081;
+    border-radius: 4px;
 }
 
 .checkbox-container input[type="checkbox"] {
@@ -301,12 +308,12 @@ select:focus + .select-arrow {
 
 .checkmark {
     position: relative;
-    min-width: 22px;
-    width: 22px;
-    height: 22px;
-    border: 2px solid #da0081;
+    min-width: 20px;
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid #da0081;
     border-radius: 50%;
-    margin-right: 12px;
+    margin-right: 10px;
     flex-shrink: 0;
     background: transparent;
 }
@@ -317,9 +324,10 @@ select:focus + .select-arrow {
 }
 
 .checkbox-text {
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 12px;
+    line-height: 1.35;
     color: #200020;
+    font-weight: 400;
 }
 
 .info-text {
@@ -332,13 +340,14 @@ select:focus + .select-arrow {
 
 .btn-submit {
     width: 100%;
-    padding: 11px;
-    font-size: 15px;
-    font-weight: 600;
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
     color: #ffffff;
     background-color: #f1bfda;
     border: none;
-    border-radius: 8px;
+    border-radius: 0;
     cursor: not-allowed;
     font-family: 'Manrope', sans-serif;
     margin-bottom: 12px;
@@ -379,7 +388,7 @@ select:focus + .select-arrow {
 .confirmation-box {
     background-color: #ffffff;
     border: 1px solid #e8e8e8;
-    border-radius: 8px;
+    border-radius: 0;
     padding: 28px 24px;
     margin-bottom: 24px;
 }
@@ -406,13 +415,14 @@ select:focus + .select-arrow {
 
 .btn-recargar {
     width: 100%;
-    padding: 11px;
-    font-size: 15px;
-    font-weight: 600;
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
     color: #ffffff;
     background-color: #da0081;
     border: none;
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     font-family: 'Manrope', sans-serif;
     margin-bottom: 10px;
@@ -420,13 +430,14 @@ select:focus + .select-arrow {
 
 .btn-atras {
     width: 100%;
-    padding: 11px;
-    font-size: 15px;
-    font-weight: 600;
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
     color: #200020;
     background-color: #ffffff;
-    border: 1.5px solid #e8e8e8;
-    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+    border-radius: 0;
     cursor: pointer;
     font-family: 'Manrope', sans-serif;
 }

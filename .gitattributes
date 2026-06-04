@@ -1,0 +1,12 @@
+# Normalización automática a LF y UTF-8
+* text=auto eol=lf working-tree-encoding=UTF-8
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary

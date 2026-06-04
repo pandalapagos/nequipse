@@ -1,0 +1,79 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Docker Compose — Stack producción
+# ────────────────────────────────────────────────────────────────────────────
+# Nginx (reverse proxy, SSL termination, rate limit)
+#   ↓
+# Node.js cluster (4 workers por contenedor, escala vía docker compose --scale)
+#   ↓
+# Redis (Socket.IO adapter para sincronizar eventos entre workers)
+#
+# Comandos:
+#   docker compose up -d
+#   docker compose up -d --scale app=3        # 3 contenedores Node
+#   docker compose logs -f app
+# ════════════════════════════════════════════════════════════════════════════
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "no"]
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      WORKERS: 4
+      REDIS_URL: redis://redis:6379
+      TRUST_PROXY: "loopback, linklocal, uniquelocal"
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/letsencrypt:ro
+      - ./nginx/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    networks:
+      - backend
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+networks:
+  backend:
+    driver: bridge

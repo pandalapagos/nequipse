@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
+*.log
+logs/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Build / deployment artifacts
+release.zip
+*.tgz
+coverage/
+.nyc_output/
+
+# Azure / IIS runtime
+iisnode/
+iisnode.yml
+
+# Certs / secrets
+nginx/certs/*
+!nginx/certs/.gitkeep
+*.pem
+*.key
+*.crt

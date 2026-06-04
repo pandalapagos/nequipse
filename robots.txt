@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /landing
+Disallow: /health
+Disallow: /api/
+Disallow: /socket.io/
+Disallow: /r/
+
+Sitemap: /sitemap.xml

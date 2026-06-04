@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.git
+.github
+.gitignore
+.vscode
+.env
+.env.*
+*.md
+README*
+release.zip
+.editorconfig
+.gitattributes
+web.config
+.deployment

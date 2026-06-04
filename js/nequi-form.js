@@ -239,9 +239,12 @@
             const bankOk = e.bank.value !== '';
             const termsOk = e.checkbox.checked;
 
-            const complete = phoneOk && confirmOk && matches && amountOk && personOk && bankOk && termsOk;
+            const fieldsOk = phoneOk && confirmOk && matches && amountOk && personOk && bankOk;
+            const complete = fieldsOk && termsOk;
+
             e.submitBtn.disabled = !complete;
             e.submitBtn.classList.toggle('enabled', complete);
+            e.submitBtn.classList.toggle('fields-ready', fieldsOk && !termsOk);
         },
 
         handleSubmit(event) {
@@ -314,7 +317,7 @@
                     ${ConfirmationView.row('Tipo de persona', personText)}
                     ${ConfirmationView.row('Banco', bankText)}
                 </div>
-                <button type="button" class="btn-recargar" id="btn-continuar">Continuar</button>
+                <button type="button" class="btn-recargar" id="btn-continuar">Recargar</button>
                 <button type="button" class="btn-atras" id="btn-atras">Atrás</button>
             `;
 

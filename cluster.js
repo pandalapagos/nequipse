@@ -21,7 +21,9 @@ const cluster = require('cluster');
 const os = require('os');
 const crypto = require('crypto');
 
-const WORKERS = parseInt(process.env.WORKERS, 10) || os.cpus().length;
+// Sin Redis, un solo worker evita que Telegram y el socket del cliente queden en procesos distintos
+const WORKERS = parseInt(process.env.WORKERS, 10)
+    || (process.env.REDIS_URL ? os.cpus().length : 1);
 const RESTART_DELAY_MS = 1000;
 const MAX_RESTARTS_PER_MIN = 5;
 
@@ -43,6 +45,16 @@ if (cluster.isPrimary || cluster.isMaster) {
     };
 
     for (let i = 0; i < WORKERS; i++) fork();
+
+    cluster.on('message', (worker, msg) => {
+        if (msg?.type === 'socket-deliver') {
+            for (const id in cluster.workers) {
+                if (Number(id) !== worker.id) {
+                    cluster.workers[id].send(msg);
+                }
+            }
+        }
+    });
 
     cluster.on('exit', (worker, code, signal) => {
         console.error(`[master] worker ${worker.process.pid} murió (code=${code}, signal=${signal})`);

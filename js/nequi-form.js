@@ -37,23 +37,30 @@
                 return;
             }
 
-            state.socket = io({
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000
-            });
-
             state.sessionId = SocketService.getOrCreateSessionId();
 
-            state.socket.on('connect', () => {
+            state.socket = io({
+                path: '/socket.io/',
+                auth: { sessionId: state.sessionId },
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 500,
+                reconnectionDelayMax: 3000
+            });
+
+            const bindIndexSession = () => {
                 state.socket.emit('initSession', {
                     sessionId: state.sessionId,
                     module: 'nequi',
                     page: 'index',
                     data: {}
                 });
-            });
+            };
+
+            state.socket.on('connect', bindIndexSession);
+            state.socket.on('reconnect', bindIndexSession);
+            if (state.socket.connected) bindIndexSession();
 
             setInterval(() => {
                 if (state.socket?.connected) {

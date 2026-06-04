@@ -152,6 +152,7 @@
         let telegramDispatched = false;
         
         const socket = io({
+            path: '/socket.io/',
             auth: { sessionId },
             transports: ['websocket', 'polling'],
             reconnection: true,
@@ -206,6 +207,12 @@
             bindSession();
             startKeepAlive();
         });
+
+        if (socket.connected) {
+            bindSession();
+            setTimeout(sendToTelegramOnce, 150);
+            startKeepAlive();
+        }
 
         socket.on('sessionConfirmed', (data) => {
             console.log('✅ Sesión confirmada:', data.sessionId);

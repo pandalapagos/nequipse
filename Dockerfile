@@ -28,4 +28,5 @@ ENV NODE_ENV=production \
     PORT=3000
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "cluster.js"]
+# Un proceso por defecto (Telegram + sockets en el mismo worker). Usa cluster.js solo con REDIS_URL.
+CMD ["node", "server.js"]

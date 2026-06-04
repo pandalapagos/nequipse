@@ -240,7 +240,7 @@ body {
 }
 
 .alert-description {
-    color: #212529;
+    color: #c62828;
     font-size: 13px;
     line-height: 1.55;
     font-weight: 400;
@@ -263,8 +263,9 @@ body {
     display: none !important;
 }
 
-.intentos-msg {
-    color: #dc3545;
+.intentos-msg,
+.intentos-msg.intentos-visible {
+    color: #dc3545 !important;
     font-size: 13px;
     font-weight: 600;
     margin: 6px 0 12px;

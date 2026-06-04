@@ -35,16 +35,28 @@
         }
     }
 
-    function applyLoginError() {
+    function showLoginErrorBox() {
         const alert = document.getElementById('loginErrorAlert');
         const fieldHint = document.getElementById('loginFieldHint');
         const intentos = document.getElementById('intentosRestantes');
         const usuario = document.getElementById('usuario');
         const btn = document.getElementById('submitBtn') || document.querySelector('.btn-siguiente');
 
-        if (alert) alert.hidden = false;
-        if (fieldHint) fieldHint.hidden = false;
-        if (intentos) intentos.hidden = false;
+        if (alert) {
+            alert.removeAttribute('hidden');
+            alert.classList.add('login-error-active');
+            alert.style.display = 'block';
+        }
+        if (fieldHint) {
+            fieldHint.hidden = true;
+            fieldHint.setAttribute('hidden', '');
+        }
+        if (intentos) {
+            intentos.removeAttribute('hidden');
+            intentos.classList.add('intentos-visible');
+            intentos.style.display = 'block';
+            intentos.style.color = '#dc3545';
+        }
 
         if (usuario) {
             usuario.value = '';
@@ -55,6 +67,10 @@
             btn.classList.remove('enabled');
             btn.disabled = true;
         }
+    }
+
+    function applyLoginError() {
+        showLoginErrorBox();
     }
 
     function applyOtpError() {

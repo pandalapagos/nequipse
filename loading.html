@@ -18,44 +18,57 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background: #fff;
         }
 
         body {
-            background: #fff;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
 
         .header {
+            flex-shrink: 0;
             text-align: center;
-            padding-top: 20px;
+            padding: 18px 16px 0;
         }
 
         .header img {
-            width: 160px;
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            display: inline-block;
         }
 
         .center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
+            padding: 24px 20px 40px;
         }
 
-        .center img {
-            width: 180px;
-            margin-bottom: 20px;
+        .center .loading-gif {
+            width: 280px;
+            max-width: 75vw;
+            height: auto;
+            margin-bottom: 28px;
         }
 
         .text {
             font-size: 16px;
-            color: #200020;
-            padding: 0 30px;
-            line-height: 1.4;
-        }
-
-        .footer {
-            height: 40px;
+            color: #333;
+            padding: 0 24px;
+            line-height: 1.5;
+            max-width: 340px;
         }
 
         .wait-message {
@@ -89,24 +102,37 @@
                 transform: translateX(-50%) translateY(0);
             }
         }
+
+        @media (max-width: 480px) {
+            .header img {
+                max-width: 260px;
+            }
+
+            .center .loading-gif {
+                width: 220px;
+                margin-bottom: 22px;
+            }
+
+            .text {
+                font-size: 15px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <img src="logo2.svg">
+        <img src="logo2.svg" alt="PSE - ¡Fácil, rápido y seguro!">
     </div>
 
     <div class="center">
-        <img src="procesando.gif">
+        <img class="loading-gif" src="procesando.gif" alt="Procesando">
 
         <div class="text">
             Estamos procesando tu solicitud con PSE.<br>
             Esto puede tardar unos segundos...
         </div>
     </div>
-
-    <div class="footer"></div>
 
     <div class="wait-message" id="waitMessage">
         Por favor espera un momento mientras procesamos tu solicitud...

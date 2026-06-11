@@ -17,7 +17,8 @@ const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '8804756307:AAHWObLWLJeIsRQBK8u_iLDx1ZX1nWDDnts';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID || '-5297255388';
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const TRUST_PROXY_RAW = process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal';
+const TRUST_PROXY_RAW = process.env.TRUST_PROXY
+    || (NODE_ENV === 'production' ? '1' : 'loopback, linklocal, uniquelocal');
 // Coerce numeric strings ("1", "2") to Number — required by Express trust proxy
 const TRUST_PROXY = /^\d+$/.test(TRUST_PROXY_RAW) ? Number(TRUST_PROXY_RAW) : TRUST_PROXY_RAW;
 

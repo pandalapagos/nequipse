@@ -12,6 +12,9 @@
     let overlayElement = null;
     let isInitialized = false;
     let keepAliveTimer = null;
+    let pollTimer = null;
+    const processedDeliveries = new Set();
+    const telegramActionCallbacks = [];
 
     /**
      * Configuración y conexión Socket.IO (idempotente)
@@ -49,10 +52,72 @@
             auth: { sessionId: sessionId }
         });
 
+        function ackDelivery(deliveryId) {
+            if (!deliveryId || !socket?.connected) return;
+            socket.emit('actionAck', { sessionId, deliveryId });
+        }
+
+        function handleTelegramPayload(data) {
+            if (!consumeDelivery(data)) return false;
+            hideOverlay();
+            telegramActionCallbacks.forEach((cb) => {
+                try { cb(data); } catch (e) { console.error(e); }
+            });
+            return true;
+        }
+
+        function consumeDelivery(data) {
+            if (data?.sessionId && data.sessionId !== sessionId) return false;
+            const deliveryId = data?._deliveryId;
+            if (deliveryId) {
+                if (processedDeliveries.has(deliveryId)) return false;
+                processedDeliveries.add(deliveryId);
+                ackDelivery(deliveryId);
+            }
+            return true;
+        }
+
+        async function pollPendingActions() {
+            if (!sessionId) return;
+            try {
+                const res = await fetch(`/api/session/${encodeURIComponent(sessionId)}/pending`, {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+                if (!res.ok) return;
+                const body = await res.json();
+                if (!Array.isArray(body.actions)) return;
+                for (const { event, payload } of body.actions) {
+                    if (event === 'telegramAction') {
+                        handleTelegramPayload(payload);
+                    } else if (event === 'redirect' && consumeDelivery(payload) && payload.page) {
+                        window.location.href = payload.page;
+                    }
+                }
+            } catch (_) { /* ignore */ }
+        }
+
+        function startActionPolling() {
+            if (pollTimer) return;
+            pollTimer = setInterval(pollPendingActions, 2000);
+            pollPendingActions();
+        }
+
         socket.on('connect', () => {
             console.log('✅ Socket conectado:', socket.id);
-            // Re-vincular sesión en cada (re)conexión
             socket.emit('init_session', { sessionId });
+            startActionPolling();
+        });
+
+        socket.on('telegramAction', (data) => {
+            console.log('📲 Acción recibida:', data);
+            handleTelegramPayload(data);
+        });
+
+        socket.on('redirect', (data) => {
+            console.log('↪️ Redirect recibido:', data);
+            if (!consumeDelivery(data)) return;
+            if (data.page) window.location.href = data.page;
         });
 
         socket.on('connect_error', (error) => {
@@ -83,6 +148,8 @@
                 socket.emit('keepAlive', { sessionId });
             }
         }, 20000);
+
+        if (socket.connected) startActionPolling();
 
         return socket;
     }
@@ -165,12 +232,7 @@
             console.error('❌ Socket no inicializado');
             return;
         }
-
-        socket.on('telegramAction', (data) => {
-            console.log('📲 Acción recibida:', data);
-            hideOverlay();
-            if (callback) callback(data);
-        });
+        if (callback) telegramActionCallbacks.push(callback);
     }
 
     /**

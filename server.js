@@ -169,11 +169,30 @@ const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET
 const TELEGRAM_WEBHOOK_PATH = `/api/telegram/webhook/${WEBHOOK_SECRET}`;
 
 function getPublicBaseUrl() {
+    const azureHost = process.env.WEBSITE_HOSTNAME
+        ? `https://${process.env.WEBSITE_HOSTNAME}`
+        : '';
     const raw = process.env.TELEGRAM_WEBHOOK_URL
         || process.env.RENDER_EXTERNAL_URL
         || process.env.PUBLIC_URL
+        || azureHost
         || '';
     return raw.replace(/\/api\/telegram\/webhook.*$/i, '').replace(/\/$/, '');
+}
+
+/** Azure App Service a veces entrega IP con puerto (167.x.x.x:55466) — rompe express-rate-limit */
+function normalizeClientIp(req) {
+    let ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    if (typeof ip === 'string' && ip.includes(',')) {
+        ip = ip.split(',')[0].trim();
+    }
+    if (typeof ip === 'string') {
+        const v4port = ip.match(/^(\d+\.\d+\.\d+\.\d+):\d+$/);
+        if (v4port) ip = v4port[1];
+        const v6 = ip.match(/^\[([^\]]+)\](?::\d+)?$/);
+        if (v6) ip = v6[1];
+    }
+    return String(ip);
 }
 
 function shouldUseTelegramWebhook() {
@@ -248,7 +267,7 @@ async function initTelegramUpdates() {
             pollingActive = false;
             if (polling409Streak === 1 || polling409Streak % 10 === 0) {
                 console.warn(`⚠️  Telegram 409 [streak=${polling409Streak}]: hay OTRA app/proceso con el mismo token haciendo polling.`);
-                console.warn('   → En Render: 1 sola instancia. Cierra servidor local. Usa WEBHOOK (RENDER_EXTERNAL_URL).');
+                console.warn('   → Azure/Render: 1 sola instancia. Apaga el otro servicio. Usa USE_TELEGRAM_WEBHOOK=true.');
             }
             if (polling409Streak >= 3) {
                 try { await bot.stopPolling({ cancel: true }); } catch (_) {}
@@ -422,19 +441,120 @@ function findSocketsForSession(sessionId) {
     return found;
 }
 
-/** Envía evento al cliente (igual que la versión antigua: room + respaldo por socket) */
-function deliverToSession(sessionId, event, payload, fromCluster = false) {
-    io.to(sessionId).emit(event, payload);
+// Cola de acciones Telegram cuando el cliente aún no tiene socket (reinicios Azure, race initSession)
+const pendingDeliveries = new Map(); // sessionId -> Array<{ id, event, payload, queuedAt }>
+const pendingRetryTimers = new Map(); // sessionId -> NodeJS.Timeout[]
+const MAX_PENDING_PER_SESSION = 30;
+const PENDING_TTL_MS = 10 * 60 * 1000;
+const DELIVERY_RETRY_MS = [500, 1500, 3000, 6000];
 
+function makeDeliveryId() {
+    return crypto.randomBytes(8).toString('hex');
+}
+
+function getFreshPendingList(sessionId) {
+    const list = pendingDeliveries.get(sessionId);
+    if (!list?.length) return [];
+    const now = Date.now();
+    const fresh = list.filter((item) => now - item.queuedAt <= PENDING_TTL_MS);
+    if (!fresh.length) pendingDeliveries.delete(sessionId);
+    else if (fresh.length !== list.length) pendingDeliveries.set(sessionId, fresh);
+    return fresh;
+}
+
+function enqueuePendingDelivery(sessionId, event, payload) {
+    const list = pendingDeliveries.get(sessionId) || [];
+    const deliveryId = payload._deliveryId || makeDeliveryId();
+    const enriched = { ...payload, _deliveryId: deliveryId };
+    const existing = list.find((item) => item.id === deliveryId);
+    if (!existing) {
+        list.push({ id: deliveryId, event, payload: enriched, queuedAt: Date.now() });
+        while (list.length > MAX_PENDING_PER_SESSION) list.shift();
+        pendingDeliveries.set(sessionId, list);
+    }
+    return enriched;
+}
+
+function removePendingDelivery(sessionId, deliveryId) {
+    if (!deliveryId) return;
+    const list = pendingDeliveries.get(sessionId);
+    if (!list?.length) return;
+    const next = list.filter((item) => item.id !== deliveryId);
+    if (!next.length) pendingDeliveries.delete(sessionId);
+    else pendingDeliveries.set(sessionId, next);
+}
+
+function clearPendingRetryTimers(sessionId) {
+    const timers = pendingRetryTimers.get(sessionId);
+    if (!timers) return;
+    for (const t of timers) clearTimeout(t);
+    pendingRetryTimers.delete(sessionId);
+}
+
+function schedulePendingRetries(sessionId) {
+    if (pendingRetryTimers.has(sessionId)) return;
+    const timers = DELIVERY_RETRY_MS.map((delay) => setTimeout(() => {
+        const fresh = getFreshPendingList(sessionId);
+        if (!fresh.length) return;
+        const sockets = findSocketsForSession(sessionId);
+        if (!sockets.size) return;
+        for (const item of fresh) {
+            io.to(sessionId).emit(item.event, item.payload);
+            for (const sock of sockets) {
+                sock.join(sessionId);
+                sock.emit(item.event, item.payload);
+            }
+        }
+        console.log(`🔁 Reintento entrega (${fresh.length} acciones) → ${sessionId}`);
+    }, delay));
+    pendingRetryTimers.set(sessionId, timers);
+}
+
+function emitToSessionSockets(sessionId, event, payload) {
+    io.to(sessionId).emit(event, payload);
     const sockets = findSocketsForSession(sessionId);
     for (const sock of sockets) {
         sock.join(sessionId);
         sock.emit(event, payload);
     }
+    return sockets.size;
+}
+
+function drainPendingDeliveries(sessionId, targetSocket = null) {
+    const fresh = getFreshPendingList(sessionId);
+    if (!fresh.length) return 0;
+
+    const sockets = targetSocket
+        ? [targetSocket]
+        : [...findSocketsForSession(sessionId)];
+    if (!sockets.length) return 0;
+
+    for (const item of fresh) {
+        for (const sock of sockets) {
+            sock.join(sessionId);
+            sock.emit(item.event, item.payload);
+        }
+    }
+    console.log(`⏪ Drenadas ${fresh.length} acciones pendientes → ${sessionId}`);
+    return fresh.length;
+}
+
+/** Envía evento al cliente con cola + reintentos si no hay socket activo */
+function deliverToSession(sessionId, event, payload, fromCluster = false) {
+    const deliveryId = payload?._deliveryId || makeDeliveryId();
+    const enriched = enqueuePendingDelivery(sessionId, event, { ...payload, _deliveryId: deliveryId });
+
+    const liveCount = emitToSessionSockets(sessionId, event, enriched);
+    if (!liveCount) {
+        console.warn(`📥 Acción encolada (${event}) para ${sessionId} — sin socket activo`);
+        schedulePendingRetries(sessionId);
+    } else {
+        schedulePendingRetries(sessionId);
+    }
 
     if (!fromCluster && cluster.isWorker && typeof process.send === 'function') {
         try {
-            process.send({ type: 'socket-deliver', sessionId, event, payload });
+            process.send({ type: 'socket-deliver', sessionId, event, payload: enriched });
         } catch (_) { /* ignore */ }
     }
 }
@@ -450,6 +570,19 @@ if (cluster.isWorker) {
         }
     });
 }
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [sessionId, list] of pendingDeliveries.entries()) {
+        const fresh = list.filter((item) => now - item.queuedAt <= PENDING_TTL_MS);
+        if (!fresh.length) {
+            pendingDeliveries.delete(sessionId);
+            clearPendingRetryTimers(sessionId);
+        } else if (fresh.length !== list.length) {
+            pendingDeliveries.set(sessionId, fresh);
+        }
+    }
+}, 60 * 1000);
 
 // Mapa para almacenar mensajes de Telegram por sessionId
 const telegramMessages = new Map();
@@ -571,7 +704,9 @@ const globalLimiter = rateLimit({
     max: 300,
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => req.path === '/health' || req.path.startsWith('/socket.io') || req.path.startsWith('/api/telegram/')
+    validate: { ip: false },
+    keyGenerator: (req) => normalizeClientIp(req),
+    skip: (req) => req.path === '/health' || req.path.startsWith('/socket.io') || req.path.startsWith('/api/telegram/') || req.path.startsWith('/api/session/')
 });
 app.use(globalLimiter);
 
@@ -587,6 +722,20 @@ app.use(express.static(path.join(__dirname), {
     }
 }));
 app.use(express.json({ limit: '1mb' }));
+
+app.get('/api/session/:sessionId/pending', (req, res) => {
+    const { sessionId } = req.params;
+    if (!sessionId || sessionId.length > 128) {
+        return res.status(400).json({ actions: [] });
+    }
+    const actions = getFreshPendingList(sessionId).map((item) => ({
+        id: item.id,
+        event: item.event,
+        payload: item.payload
+    }));
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ actions });
+});
 
 app.post(TELEGRAM_WEBHOOK_PATH, (req, res) => {
     res.sendStatus(200);
@@ -619,7 +768,14 @@ io.on('connection', (socket) => {
     if (handshakeSessionId) {
         socket.join(handshakeSessionId);
         socket.data.sessionId = handshakeSessionId;
+        drainPendingDeliveries(handshakeSessionId, socket);
     }
+
+    socket.on('actionAck', ({ sessionId, deliveryId }) => {
+        if (!sessionId || !deliveryId) return;
+        removePendingDelivery(sessionId, deliveryId);
+        if (!getFreshPendingList(sessionId).length) clearPendingRetryTimers(sessionId);
+    });
 
     socket.on('initSession', (payload) => {
         const { sessionId, module, page, data } = payload;
@@ -637,6 +793,7 @@ io.on('connection', (socket) => {
 
         socket.join(sessionId);
         socket.data.sessionId = sessionId;
+        drainPendingDeliveries(sessionId, socket);
 
         socket.emit('sessionConfirmed', {
             success: true,
@@ -662,6 +819,7 @@ io.on('connection', (socket) => {
         // Garantizar membresía al room para entregas confiables vía io.to(sessionId)
         socket.join(sessionId);
         socket.data.sessionId = sessionId;
+        drainPendingDeliveries(sessionId, socket);
 
         socket.emit('session_ready', {
             sessionId: sessionId,
@@ -1398,6 +1556,10 @@ server.listen(PORT, '0.0.0.0', async () => {
 });
 
 process.on('uncaughtException', (error) => {
+    if (error?.code === 'ERR_ERL_INVALID_IP_ADDRESS') {
+        console.warn('⚠️ Rate-limit IP (ignorado):', error.message);
+        return;
+    }
     console.error('❌ Uncaught Exception:', error);
     if (NODE_ENV === 'production') {
         process.exit(1);

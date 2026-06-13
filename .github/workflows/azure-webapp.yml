@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: solicitarmitarjetamundialbancmbia
+  AZURE_WEBAPP_NAME: recargaps3nequi
 
 jobs:
   build-and-deploy:
